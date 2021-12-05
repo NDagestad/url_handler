@@ -6,15 +6,15 @@ url_handler - opens your urls with whatever program you have configured for it
 
 # SYNOPSIS
 
-*url_handler* [--debug] URIs...
+*url_handler* [-debug] URIs...
 
-_command_ | *url_handler* [--debug]
+_command_ | *url_handler* [-debug] (read URIs from stdin)
 
-*url_handler* [--debug] (will read from the clipboard)
+*url_handler* [-debug] (will read from the clipboard)
 
 # DESCRIPTION
 
-url_handler is a utility that takes some URI and open the coresponding resource
+url_handler is a utility that takes one or more URI and open the coresponding resource
 with the program you have configured it to use.
 
 # FILES
