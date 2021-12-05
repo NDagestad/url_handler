@@ -52,8 +52,8 @@ there might be a bug there) All these values defaults to unset.
 
 The matching process follows the order in which the options are listed here.
 On the first match, the search is stopped and the *exec* corresponding to that 
-section is used to handle the URI. The matching process also tries each
-ressource type in the order they are listed in the config file.
+section is used to handle the URI. The order in which the different sections
+will be tried is not unknown.
 
 *exec*
 	The only mandatory option, and the only one that must be unique for the
