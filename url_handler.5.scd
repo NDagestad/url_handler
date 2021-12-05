@@ -25,8 +25,8 @@ This section does not need to be named, in it you will find these options:
 	be used. Defaults to unset. 
 
 *filter_path*
-	The (absolute for now) path in which filters will be loocked for. If unset, filters will just not
-	work. Default to unset.
+	The (absolute for now) path in which filters will be loocked for. If unset,
+	the filters will be looked up in $PATH. Default to unset.
 
 *filter_shell*
 	The shell used to launch the filters. If unset, the filter will be launched as
@@ -70,6 +70,22 @@ ressource type in the order they are listed in the config file.
 
 *url_regex*
 	Regexs that matche URIs for this ressource.
+
+*filter*
+	Program to run on the URI. This programm must return 0 if the URI should
+	match for this ressource type and 1 if it should not match. Any other value
+	is treated a if an error occured.
+
+	A context is passed to the filter in the following environment variables:
+	- *url* the raw URI beeing handled
+	- *protocol* the protocol of this URI
+	- *user* the user of this URI
+	- *host* the host part of this URI
+	- *path* the path of the ressource in this URI
+	- *section* the name of the section that called the filter
+
+	And lastly, if there is a password in the URI, it is send to the filter over
+	it's stdin.
 
 
 # FILES
