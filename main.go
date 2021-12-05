@@ -291,7 +291,7 @@ func main() {
 	//TODO: handle multiple URIs at once
 	var raw_urls []string
 	raw_urls = append(raw_urls, flag.Args()...)
-	if raw_urls[0] == "" {
+	if len(raw_urls) == 0 {
 		if !isatty.IsTerminal(os.Stdin.Fd()) {
 			data, err := ioutil.ReadAll(os.Stdin)
 			if err != nil {
