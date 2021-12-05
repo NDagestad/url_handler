@@ -35,15 +35,16 @@ type Handler struct {
 	UrlRegexs  []string
 }
 
-var AppName = "url_handler"
+var (
+	AppName string
+	debug   *bool
+)
 
-func log(debug *bool, format string, args ...interface{}) {
+func log(format string, args ...interface{}) {
 	if *debug {
 		fmt.Printf(format, args...)
 	}
 }
-
-var debug *bool
 
 func run_filter(section_name string, filter string, url *url.URL, config *Config, handler Handler) ([]string, string) {
 	var executable string
@@ -76,7 +77,7 @@ func run_filter(section_name string, filter string, url *url.URL, config *Config
 		fmt.Fprintf(os.Stderr, "Could not get a pipe to the filters stdout: %v\n", err)
 	}
 	cmd.Env = env
-	log(debug, "%#v\n", cmdline)
+	log("Running %#v\n", cmdline)
 	err = cmd.Run()
 	if err != nil && cmd.ProcessState.ExitCode() != 1 {
 		fmt.Fprintf(os.Stderr, "Error running the filter \"%s\": %s\n", filter, err)
@@ -84,7 +85,7 @@ func run_filter(section_name string, filter string, url *url.URL, config *Config
 	if cmd.ProcessState.ExitCode() == 0 {
 		new_url, err := ioutil.ReadAll(cmd_stdout)
 		if err != nil {
-			log(debug, "Error reading stdout from the filter (%s) output: %v\n", filter, err)
+			log("Error reading stdout from the filter (%s) output: %v\n", filter, err)
 		}
 		return handler.Program, string(new_url)
 	}
@@ -106,7 +107,7 @@ func handle_uri(raw_url string, config *Config) {
 
 handler:
 	for name, handler := range config.TypeHandlers {
-		log(debug, "%s\n", name)
+		log("Chacking matchs for %s\n", name)
 		for _, p := range handler.Protocols {
 			if p == "" {
 				// Issue reported and solution proposed
@@ -115,7 +116,7 @@ handler:
 				break
 			}
 			if p == url.Scheme {
-				log(debug, "Matched with the protocol for %#v\n", p)
+				log("Matched with the protocol for %#v\n", p)
 				runner = handler.Program
 				break handler
 			}
@@ -129,7 +130,7 @@ handler:
 				break
 			}
 			if ext == extension {
-				log(debug, "Matched with the extension for %#v\n", ext)
+				log("Matched with the extension for %#v\n", ext)
 				runner = handler.Program
 				break handler
 			}
@@ -144,7 +145,7 @@ handler:
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error matching the url to a regex: %v\n", err)
 			} else if matched {
-				log(debug, "Matched with a regex for %#v\n", reg)
+				log("Matched with a regex for %#v\n", reg)
 				runner = handler.Program
 				break handler
 			}
@@ -165,12 +166,12 @@ handler:
 			new_runner, new_url = run_filter(name, filter, url, config, handler)
 			if new_url != "" {
 				//TODO: do something to replace the current url
-				log(debug, "(%s):A filter gave us a new url: %s\n", filter, new_url)
+				log("(%s):A filter gave us a new url: %s\n", filter, new_url)
 				//break handler
 			}
 			if new_runner != nil {
 				runner = new_runner
-				log(debug, "Matched because of a filter: %s\n", filter)
+				log("Matched because of a filter: %s\n", filter)
 				break handler
 			}
 		}
@@ -178,12 +179,12 @@ handler:
 			new_runner, new_url = run_filter(name, name, url, config, handler)
 			if new_url != "" {
 				//TODO: do something to replace the current url
-				log(debug, "(%s)The default filter gave us a new url: %s\n", name, new_url)
+				log("(%s)The default filter gave us a new url: %s\n", name, new_url)
 				//break handler
 			}
 			if new_runner != nil {
 				runner = new_runner
-				log(debug, "Matched because of the default filter: %s\n", name)
+				log("Matched because of the default filter: %s\n", name)
 				break handler
 			}
 		}
@@ -199,7 +200,7 @@ handler:
 	cmdline = append(cmdline, raw_url)
 	cmd := exec.Command(cmdline[0], cmdline[1:]...)
 
-	log(debug, "%#v\n", cmdline)
+	log("Handling the url with: %#v\n", cmdline)
 
 	err = cmd.Run()
 	if err != nil {
@@ -306,6 +307,7 @@ func main() {
 	}
 
 	for _, url := range raw_urls {
+		log("Starting handling of %s\n", url)
 		handle_uri(url, config)
 	}
 }
