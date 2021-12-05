@@ -108,6 +108,13 @@ func handle_uri(raw_url string, config *Config) {
 		fmt.Fprintf(os.Stderr, "Error in parsing the url %v\n", err)
 		return
 	}
+
+	if url.Scheme == "" {
+		log("Expanding potential tildes in the path\n")
+		url.Path = expandTilde(url.Path)
+		raw_url = url.String()
+	}
+
 	parts := strings.Split(url.Path, ".")
 	//TODO: get the mimetype if it is a local ressource
 	extension := parts[len(parts)-1]
@@ -219,6 +226,14 @@ handler:
 	}
 }
 
+func expandTilde(s string) string {
+	if strings.HasPrefix(s, "~/") {
+		dirname, _ := os.UserHomeDir()
+		s = path.Join(dirname, s[2:])
+	}
+	return s
+}
+
 func main() {
 	config := &Config{
 		Browser:      []string{"xdg-open"},
@@ -235,9 +250,12 @@ func main() {
 		return
 	}
 
-	//TODO Add variable interpolation in the config file
 	conf, err := ini.ShadowLoad(configFile)
-	conf.ValueMapper = os.ExpandEnv
+	conf.ValueMapper = func(s string) string {
+		s = os.ExpandEnv(s)
+		return expandTilde(s)
+	}
+
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error oppening config file: %v", err)
 		return
@@ -262,8 +280,8 @@ func main() {
 			}
 
 			config.FilterPath = section.Key("filter_path").String()
-			if _, err := os.Stat(config.FilterPath); os.IsNotExist(err) {
-				fmt.Print(err)
+			if _, err := os.Stat(config.FilterPath); config.FilterPath != "" && os.IsNotExist(err) {
+				fmt.Printf("Error with the filter_path: %s\n", err)
 				return
 			}
 			filter_shell_cmd_line := section.Key("filter_shell").String()
