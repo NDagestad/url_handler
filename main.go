@@ -41,6 +41,8 @@ func log(debug *bool, format string, args ...interface{}) {
 	}
 }
 
+var debug *bool
+
 func run_filter(filter string, url *url.URL, config *Config, handler Handler) ([]string, string) {
 	executable := path.Join(config.FilterPath, filter)
 	_, err := os.Stat(executable)
@@ -71,7 +73,7 @@ func run_filter(filter string, url *url.URL, config *Config, handler Handler) ([
 		fmt.Fprintf(os.Stderr, "Could not get a pipe to the filters stdout: %v\n", err)
 	}
 	cmd.Env = env
-	fmt.Printf("%#v\n", cmdline)
+	log(debug, "%#v\n", cmdline)
 	err = cmd.Run()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error running the filter \"%s\": %s\n", filter, err)
@@ -101,7 +103,7 @@ func main() {
 		TypeHandlers: make(map[string]Handler),
 	}
 
-	debug := flag.Bool("debug", false, "Enable debug output")
+	debug = flag.Bool("debug", false, "Enable debug output")
 
 	flag.Parse()
 
@@ -197,6 +199,7 @@ handler:
 		log(debug, "%s\n", name)
 		for _, p := range handler.Protocols {
 			if p == "" {
+				// Issue reported and solution proposed
 				// FIXME: workaround for go-ini giving us an array with an empty string instead
 				//of an empty array
 				break
