@@ -50,6 +50,13 @@ func run_filter(section_name string, filter string, url *url.URL, config *Config
 	var executable string
 	if config.FilterPath != "" {
 		executable = path.Join(config.FilterPath, filter)
+		_, err := os.Stat(executable)
+		if err != nil {
+			if section_name != filter {
+				fmt.Fprintf(os.Stderr, "Could not run the filter \"%s\": %s\n", filter, err)
+			}
+			return nil, ""
+		}
 	} else {
 		executable = filter
 	}
@@ -81,13 +88,15 @@ func run_filter(section_name string, filter string, url *url.URL, config *Config
 	err = cmd.Run()
 	if err != nil && cmd.ProcessState.ExitCode() != 1 {
 		fmt.Fprintf(os.Stderr, "Error running the filter \"%s\": %s\n", filter, err)
-	}
-	if cmd.ProcessState.ExitCode() == 0 {
+	} else if cmd.ProcessState.ExitCode() == 0 {
 		new_url, err := ioutil.ReadAll(cmd_stdout)
 		if err != nil {
 			log("Error reading stdout from the filter (%s) output: %v\n", filter, err)
 		}
 		return handler.Program, string(new_url)
+	} else if cmd.ProcessState.ExitCode() == 1 {
+		log("Filter (%s) returned 1\n", filter)
+		return nil, ""
 	}
 	return nil, ""
 }
@@ -175,7 +184,8 @@ handler:
 				break handler
 			}
 		}
-		if len(handler.Filters) == 0 {
+		//if len(handler.Filters) == 0 {
+		if handler.Filters[0] == "" { //FIXME: workaround for the above go-ini bug
 			new_runner, new_url = run_filter(name, name, url, config, handler)
 			if new_url != "" {
 				//TODO: do something to replace the current url
@@ -216,7 +226,6 @@ func main() {
 	}
 
 	debug = flag.Bool("debug", false, "Enable debug output")
-
 	flag.Parse()
 
 	AppName = os.Args[0]
@@ -228,6 +237,7 @@ func main() {
 
 	//TODO Add variable interpolation in the config file
 	conf, err := ini.ShadowLoad(configFile)
+	conf.ValueMapper = os.ExpandEnv
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error oppening config file: %v", err)
 		return
