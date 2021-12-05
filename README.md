@@ -30,6 +30,6 @@ xdg base directory spec)
 
 # Hacking
 
-Patches are welcome, for now you can send them to [mailto:misc-git@nicolai.dagestad.fr](misc-git@nicolai.dagestad.fr) 
+Patches are welcome, for now you can send them to [misc-git@nicolai.dagestad.fr](mailto:misc-git@nicolai.dagestad.fr) 
 directly until I set up mailling lists on my sourcehut instance.
 
