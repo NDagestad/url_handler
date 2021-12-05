@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	_ "mime"
 	"net/url"
 	"os"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/adrg/xdg"
 	"github.com/google/shlex"
+	"github.com/mattn/go-isatty"
 	"gopkg.in/ini.v1"
 )
 
@@ -43,22 +45,23 @@ func log(debug *bool, format string, args ...interface{}) {
 
 var debug *bool
 
-func run_filter(filter string, url *url.URL, config *Config, handler Handler) ([]string, string) {
-	executable := path.Join(config.FilterPath, filter)
-	_, err := os.Stat(executable)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not run the filter \"%s\": %s\n", filter, err)
-		return nil, ""
+func run_filter(section_name string, filter string, url *url.URL, config *Config, handler Handler) ([]string, string) {
+	var executable string
+	if config.FilterPath != "" {
+		executable = path.Join(config.FilterPath, filter)
+	} else {
+		executable = filter
 	}
 	cmdline := config.FilterShell
 	cmdline = append(cmdline, executable)
 	cmd := exec.Command(cmdline[0], cmdline[1:]...)
 	env := os.Environ()
-	env = append(env, fmt.Sprintf("url=%s", url.String())) //XXX this could be slitghly different from str_url
+	env = append(env, fmt.Sprintf("url=%s", url.String())) //XXX this could be slitghly different from raw_url
 	env = append(env, fmt.Sprintf("protocol=%s", url.Scheme))
 	env = append(env, fmt.Sprintf("user=%s", url.User.Username()))
 	env = append(env, fmt.Sprintf("host=%s", url.Host))
 	env = append(env, fmt.Sprintf("path=%s", url.Path))
+	env = append(env, fmt.Sprintf("section=%s", section_name))
 	cmd_stdin, err := cmd.StdinPipe()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not get a pipe to the filters stdin: %v\n", err)
@@ -75,26 +78,134 @@ func run_filter(filter string, url *url.URL, config *Config, handler Handler) ([
 	cmd.Env = env
 	log(debug, "%#v\n", cmdline)
 	err = cmd.Run()
-	if err != nil {
+	if err != nil && cmd.ProcessState.ExitCode() != 1 {
 		fmt.Fprintf(os.Stderr, "Error running the filter \"%s\": %s\n", filter, err)
 	}
-	var runner []string
 	if cmd.ProcessState.ExitCode() == 0 {
-		runner = handler.Program
-		buffer := make([]byte, 1204)
-
-		var new_url []byte
-		n, err := cmd_stdout.Read(buffer)
-		for err == nil && n != 0 {
-			new_url = append(new_url, buffer...)
-			n, err = cmd_stdout.Read(buffer)
+		new_url, err := ioutil.ReadAll(cmd_stdout)
+		if err != nil {
+			log(debug, "Error reading stdout from the filter (%s) output: %v\n", filter, err)
 		}
-		if len(new_url) != 0 {
-			return runner, string(new_url)
-		}
-		return nil, ""
+		return handler.Program, string(new_url)
 	}
 	return nil, ""
+}
+
+func handle_uri(raw_url string, config *Config) {
+
+	url, err := url.Parse(raw_url)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error in parsing the url %v\n", err)
+		return
+	}
+	parts := strings.Split(url.Path, ".")
+	//TODO: get the mimetype if it is a local ressource
+	extension := parts[len(parts)-1]
+
+	runner := config.Browser
+
+handler:
+	for name, handler := range config.TypeHandlers {
+		log(debug, "%s\n", name)
+		for _, p := range handler.Protocols {
+			if p == "" {
+				// Issue reported and solution proposed
+				// FIXME: workaround for go-ini giving us an array with an empty string instead
+				//of an empty array
+				break
+			}
+			if p == url.Scheme {
+				log(debug, "Matched with the protocol for %#v\n", p)
+				runner = handler.Program
+				break handler
+			}
+		}
+		//TODO: match the mime type
+
+		for _, ext := range handler.Extensions {
+			if ext == "" {
+				// FIXME: workaround for go-ini giving us an array with an empty string instead
+				//of an empty array
+				break
+			}
+			if ext == extension {
+				log(debug, "Matched with the extension for %#v\n", ext)
+				runner = handler.Program
+				break handler
+			}
+		}
+		for _, reg := range handler.UrlRegexs {
+			if reg == "" {
+				// FIXME: workaround for go-ini giving us an array with an empty string instead
+				//of an empty array
+				break
+			}
+			matched, err := regexp.MatchString(reg, raw_url)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error matching the url to a regex: %v\n", err)
+			} else if matched {
+				log(debug, "Matched with a regex for %#v\n", reg)
+				runner = handler.Program
+				break handler
+			}
+		}
+
+		//TODO: support arguments for filters?
+		var (
+			new_runner []string
+			new_url    string
+		)
+
+		for _, filter := range handler.Filters {
+			if filter == "" {
+				// FIXME: workaround for go-ini giving us an array with an empty string instead
+				//of an empty array
+				break
+			}
+			new_runner, new_url = run_filter(name, filter, url, config, handler)
+			if new_url != "" {
+				//TODO: do something to replace the current url
+				log(debug, "(%s):A filter gave us a new url: %s\n", filter, new_url)
+				//break handler
+			}
+			if new_runner != nil {
+				runner = new_runner
+				log(debug, "Matched because of a filter: %s\n", filter)
+				break handler
+			}
+		}
+		if len(handler.Filters) == 0 {
+			new_runner, new_url = run_filter(name, name, url, config, handler)
+			if new_url != "" {
+				//TODO: do something to replace the current url
+				log(debug, "(%s)The default filter gave us a new url: %s\n", name, new_url)
+				//break handler
+			}
+			if new_runner != nil {
+				runner = new_runner
+				log(debug, "Matched because of the default filter: %s\n", name)
+				break handler
+			}
+		}
+	}
+
+	var cmdline []string
+	if len(config.ProgramLauncher) > 0 {
+		cmdline = append(cmdline, config.ProgramLauncher...)
+	}
+
+	cmdline = append(cmdline, runner...)
+	raw_url = "\"" + raw_url + "\"" // Quoting the url should be enough to not get interferences in the shell
+	cmdline = append(cmdline, raw_url)
+	cmd := exec.Command(cmdline[0], cmdline[1:]...)
+
+	log(debug, "%#v\n", cmdline)
+
+	err = cmd.Run()
+	if err != nil {
+		fmt.Printf("Error running the command: %v\n", err)
+		return
+	}
 }
 
 func main() {
@@ -114,6 +225,7 @@ func main() {
 		return
 	}
 
+	//TODO Add variable interpolation in the config file
 	conf, err := ini.ShadowLoad(configFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error oppening config file: %v", err)
@@ -177,123 +289,23 @@ func main() {
 	// Setup complete, let's goooo !
 
 	//TODO: handle multiple URIs at once
-	str_url := flag.Arg(0)
-	log(debug, "%#v\n", flag.Args())
-	if str_url == "" {
-		fmt.Printf("TODO: print usage\n")
-		return
-	}
-	url, err := url.Parse(str_url)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error in parsing the url %v\n", err)
-		return
-	}
-	parts := strings.Split(url.Path, ".")
-	//TODO: get the mimetype if it is a local ressource
-	extension := parts[len(parts)-1]
-
-	runner := config.Browser
-
-handler:
-	for name, handler := range config.TypeHandlers {
-		log(debug, "%s\n", name)
-		for _, p := range handler.Protocols {
-			if p == "" {
-				// Issue reported and solution proposed
-				// FIXME: workaround for go-ini giving us an array with an empty string instead
-				//of an empty array
-				break
-			}
-			if p == url.Scheme {
-				log(debug, "Matched with the protocol for %#v\n", p)
-				runner = handler.Program
-				break handler
-			}
-		}
-		//TODO: match the mime type
-
-		for _, ext := range handler.Extensions {
-			if ext == "" {
-				// FIXME: workaround for go-ini giving us an array with an empty string instead
-				//of an empty array
-				break
-			}
-			if ext == extension {
-				log(debug, "Matched with the extension for %#v\n", ext)
-				runner = handler.Program
-				break handler
-			}
-		}
-		for _, reg := range handler.UrlRegexs {
-			if reg == "" {
-				// FIXME: workaround for go-ini giving us an array with an empty string instead
-				//of an empty array
-				break
-			}
-			matched, err := regexp.MatchString(reg, str_url)
+	var raw_urls []string
+	raw_urls = append(raw_urls, flag.Args()...)
+	if raw_urls[0] == "" {
+		if !isatty.IsTerminal(os.Stdin.Fd()) {
+			data, err := ioutil.ReadAll(os.Stdin)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error matching the url to a regex: %v\n", err)
-			} else if matched {
-				log(debug, "Matched with a regex for %#v\n", reg)
-				runner = handler.Program
-				break handler
+				flag.Usage()
+				return
 			}
-		}
-
-		//TODO: support arguments for filters?
-		var (
-			new_runner []string
-			new_url    string
-		)
-
-		for _, filter := range handler.Filters {
-			if filter == "" {
-				// FIXME: workaround for go-ini giving us an array with an empty string instead
-				//of an empty array
-				break
-			}
-			new_runner, new_url = run_filter(filter, url, config, handler)
-			if new_url != "" {
-				//TODO: do something to replace the current url
-				log(debug, "(%s):A filter gave us a new url: %s\n", filter, new_url)
-				//break handler
-			}
-			if new_runner != nil {
-				runner = new_runner
-				log(debug, "Matched because of a filter: %s\n", filter)
-				break handler
-			}
-		}
-		if len(handler.Filters) == 0 {
-			new_runner, new_url = run_filter(name, url, config, handler)
-			if new_url != "" {
-				//TODO: do something to replace the current url
-				log(debug, "(%s)The default filter gave us a new url: %s\n", name, new_url)
-				//break handler
-			}
-			if new_runner != nil {
-				runner = new_runner
-				log(debug, "Matched because of the default filter: %s\n", name)
-				break handler
-			}
+			raw_urls = strings.Split(string(data), "\n")
+		} else {
+			flag.Usage()
+			return
 		}
 	}
 
-	var cmdline []string
-	if len(config.ProgramLauncher) > 0 {
-		cmdline = append(cmdline, config.ProgramLauncher...)
-	}
-
-	cmdline = append(cmdline, runner...)
-	str_url = "\"" + str_url + "\"" // Quoting the url should be enough to not get interferences in the shell
-	cmdline = append(cmdline, str_url)
-	cmd := exec.Command(cmdline[0], cmdline[1:]...)
-
-	log(debug, "%#v\n", cmdline)
-
-	err = cmd.Run()
-	if err != nil {
-		fmt.Printf("Error running the command: %v\n", err)
-		return
+	for _, url := range raw_urls {
+		handle_uri(url, config)
 	}
 }
