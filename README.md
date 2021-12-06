@@ -18,6 +18,11 @@ uploaded somwhere else
 
 Its go, so `go build`, and maybe some `go get`s ¯\\\_(ツ)\_/¯
 
+The man pages are compiled with [scdoc](https://git.sr.ht/~sircmpwn/scdoc). It might even be in your
+repos ¯\\\_(ツ)\_/¯.
+Compiling them is as easy as `scdoc < file.scd > file`, but if you just want to read them, the scdoc
+format is more or less markdown so it's quit easy to read 👍.
+
 # Installing
 
 I'll get a PKBGUILD going when it is done, for other distros you're on your own (until somebody find
