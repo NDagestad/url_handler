@@ -133,8 +133,12 @@ func handle_uri(raw_url string, config *Config) {
 
 	if url.Scheme == "" {
 		log("Expanding potential tildes in the path\n")
-		url.Path = expandTilde(url.Path)
-		raw_url = url.String()
+		raw_url = expandTilde(raw_url)
+		url, err = url.Parse(raw_url)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error in reparsing the url after expanding the tilde %v\n", err)
+			return
+		}
 	}
 
 	parts := strings.Split(url.Path, ".")
