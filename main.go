@@ -46,6 +46,28 @@ func log(format string, args ...interface{}) {
 	}
 }
 
+func get_mime_type(ressource *url.URL) (string, error) {
+	switch ressource.Scheme {
+	case "file":
+		fallthrough
+	case "":
+		//FIXME: this is a dirty way of getting the mime type
+		cmd := exec.Command("file", "--mime-type", "-b", ressource.Path)
+		output, err := cmd.StdoutPipe()
+		if err != nil {
+			return "", fmt.Errorf("Could not get pipe to `file`s stdout: %v\n", err)
+		}
+		cmd.Start()
+		data, err := ioutil.ReadAll(output)
+		if err != nil {
+			return "", fmt.Errorf("Could not read `file`s stdout: %v\n", err)
+		}
+		return strings.Trim(string(data), "\n"), nil
+		break
+	}
+	return "", nil
+}
+
 func run_filter(section_name string, filter string, url *url.URL, config *Config, handler Handler) ([]string, string) {
 	var executable string
 	if config.FilterPath != "" {
@@ -116,7 +138,12 @@ func handle_uri(raw_url string, config *Config) {
 	}
 
 	parts := strings.Split(url.Path, ".")
-	//TODO: get the mimetype if it is a local ressource
+
+	mime_type, err := get_mime_type(url)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not get mime type for %s: %v\n", url.String(), err)
+		return
+	}
 	extension := parts[len(parts)-1]
 
 	runner := config.Browser
@@ -137,7 +164,18 @@ handler:
 				break handler
 			}
 		}
-		//TODO: match the mime type
+		for _, mime := range handler.MimeTypes {
+			if mime == "" {
+				// FIXME: workaround for go-ini giving us an array with an empty string instead
+				//of an empty array
+				break
+			}
+			if mime_type == mime {
+				log("Matched with the mime-type for %#v\n", mime)
+				runner = handler.Program
+				break handler
+			}
+		}
 
 		for _, ext := range handler.Extensions {
 			if ext == "" {
