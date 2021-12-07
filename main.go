@@ -14,7 +14,6 @@ import (
 
 	"github.com/adrg/xdg"
 	"github.com/google/shlex"
-	"github.com/mattn/go-isatty"
 	"gopkg.in/ini.v1"
 )
 
@@ -23,6 +22,7 @@ type Config struct {
 	ProgramLauncher []string
 	FilterPath      string
 	FilterShell     []string
+	ClipboardCmd    []string
 	TypeHandlers    map[string]Handler
 }
 
@@ -291,6 +291,14 @@ func main() {
 					prog_cmd_line, section.Name())
 				return
 			}
+
+			clipboard_cmd_line := section.Key("clipboard_cmd").String()
+			config.ClipboardCmd, err = shlex.Split(clipboard_cmd_line)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Cannot understand %s as a shell command (from the %s section)\n",
+					clipboard_cmd_line, section.Name())
+				return
+			}
 			continue
 		}
 		_, exists := config.TypeHandlers[section.Name()]
@@ -317,20 +325,47 @@ func main() {
 	}
 	// Setup complete, let's goooo !
 
-	//TODO: handle multiple URIs at once
 	var raw_urls []string
 	raw_urls = append(raw_urls, flag.Args()...)
 	if len(raw_urls) == 0 {
-		if !isatty.IsTerminal(os.Stdin.Fd()) {
+		info, err := os.Stdin.Stat()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error when trying to stat stdin... good luck: %v\n", err)
+			return
+		}
+		if info.Mode()&os.ModeNamedPipe == 1 {
 			data, err := ioutil.ReadAll(os.Stdin)
 			if err != nil {
 				flag.Usage()
 				return
 			}
 			raw_urls = strings.Split(string(data), "\n")
+			log("Data read from stdin: %v\n", raw_urls)
 		} else {
-			flag.Usage()
-			return
+			if len(config.ClipboardCmd) == 0 {
+				fmt.Fprintf(os.Stderr, "No clipboard command\n")
+				return
+			}
+			clipboard := exec.Command(config.ClipboardCmd[0], config.ClipboardCmd[1:]...)
+			clipboard.Stdin = nil
+			clipboard_output, err := clipboard.StdoutPipe()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error getting a pipe to the clipboard commands stdout: %v\n", err)
+				return
+			}
+			err = clipboard.Start()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error running the clipboard command: %v\n", err)
+				return
+			}
+			data, err := ioutil.ReadAll(clipboard_output)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error getting data from the clipboard command: %v\n", err)
+				return
+			}
+			raw_urls = strings.Split(string(data), "\n")
+			log("Extracted clipboard content: %#v\n", raw_urls)
+			clipboard.Wait()
 		}
 	}
 
