@@ -370,6 +370,10 @@ func main() {
 	}
 
 	for _, url := range raw_urls {
+		if url == "" {
+			// Sometimes, we get an empty url after splitting stdin or the clipboard content
+			continue
+		}
 		log("Starting handling of %s\n", url)
 		handle_uri(url, config)
 	}
