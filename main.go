@@ -150,7 +150,7 @@ func handle_uri(raw_url string, config *Config) {
 
 handler:
 	for name, handler := range config.TypeHandlers {
-		log("Chacking matchs for %s\n", name)
+		log("Checking matchs for %s\n", name)
 		for _, p := range handler.Protocols {
 			if p == "" {
 				// Issue reported and solution proposed
