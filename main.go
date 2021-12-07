@@ -243,7 +243,7 @@ func main() {
 	debug = flag.Bool("debug", false, "Enable debug output")
 	flag.Parse()
 
-	AppName = os.Args[0]
+	AppName = path.Base(os.Args[0])
 	configFile, err := xdg.SearchConfigFile(path.Join(AppName, "config.ini"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not load config file: %v\n", err)
