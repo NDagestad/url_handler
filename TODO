@@ -1,5 +1,2 @@
 Prog:
-* Get the mime type from http content-type ?
-* Handle reading URIs from the clipboard somehow (Should I just shell out and use my clipboard
-	script or do it properly with the wayland protocol?)
 * Automaically spawning stuff in the background
