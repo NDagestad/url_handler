@@ -174,7 +174,12 @@ handler:
 				//of an empty array
 				break
 			}
-			if mime_type == mime {
+			matched, err := regexp.MatchString(mime, mime_type)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "%s is not a valide regex, ignored...\n", mime)
+				continue
+			}
+			if matched {
 				log("Matched with the mime-type for %#v\n", mime)
 				runner = handler.Program
 				break handler
@@ -375,7 +380,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Error when trying to stat stdin... good luck: %v\n", err)
 			return
 		}
-		if info.Mode()&os.ModeNamedPipe == 1 {
+		if info.Mode()&os.ModeNamedPipe != 0 {
 			data, err := ioutil.ReadAll(os.Stdin)
 			if err != nil {
 				flag.Usage()
