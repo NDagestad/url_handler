@@ -122,6 +122,8 @@ func run_filter(section_name string, filter string, url *url.URL, config *Config
 
 func handle_uri(raw_url string, config *Config) {
 
+	//TODO Make a wrapper around this to make a fake url struct if the file is local
+	// as to not have to lump raw_url around all the time
 	url, err := url.Parse(raw_url)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error in parsing the url %v\n", err)

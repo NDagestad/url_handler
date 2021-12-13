@@ -4,13 +4,12 @@ go 1.17
 
 require (
 	github.com/adrg/xdg v0.4.0
+	github.com/gabriel-vasile/mimetype v1.4.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
-	github.com/mattn/go-isatty v0.0.14
 	gopkg.in/ini.v1 v1.66.2
 )
 
 require (
-	github.com/gabriel-vasile/mimetype v1.4.0 // indirect
 	golang.org/x/net v0.0.0-20210505024714-0287a6fb4125 // indirect
 	golang.org/x/sys v0.0.0-20211025201205-69cdffdb9359 // indirect
 )

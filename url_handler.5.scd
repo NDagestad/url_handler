@@ -70,7 +70,8 @@ will be tried is not unknown.
 	The extensions that correspond to this ressource.
 
 *mime_type*
-	The mime types asociated with this ressource. (Not yet implemented)
+	The mime types asociated with this ressource. (Only implemented for local
+	files for now)
 
 *url_regex*
 	Regexs that matche URIs for this ressource.
@@ -88,7 +89,7 @@ will be tried is not unknown.
 	- *path* the path of the ressource in this URI
 	- *section* the name of the section that called the filter
 
-	And lastly, if there is a password in the URI, it is send to the filter over
+	And lastly, if there is a password in the URI, it is sent to the filter over
 	it's stdin.
 
 
