@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/adrg/xdg"
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/google/shlex"
 	"gopkg.in/ini.v1"
 )
@@ -46,26 +47,22 @@ func log(format string, args ...interface{}) {
 	}
 }
 
-func get_mime_type(ressource *url.URL) (string, error) {
+func get_mime_type(ressource *url.URL, raw_url string) (string, error) {
+
+	var (
+		mime string
+		err  error
+	)
+
 	switch ressource.Scheme {
 	case "file":
 		fallthrough
 	case "":
-		//FIXME: this is a dirty way of getting the mime type
-		cmd := exec.Command("file", "--mime-type", "-b", ressource.Path)
-		output, err := cmd.StdoutPipe()
-		if err != nil {
-			return "", fmt.Errorf("Could not get pipe to `file`s stdout: %v\n", err)
-		}
-		cmd.Start()
-		data, err := ioutil.ReadAll(output)
-		if err != nil {
-			return "", fmt.Errorf("Could not read `file`s stdout: %v\n", err)
-		}
-		return strings.Trim(string(data), "\n"), nil
-		break
+		var mtype *mimetype.MIME
+		mtype, err = mimetype.DetectFile(raw_url)
+		mime = mtype.String()
 	}
-	return "", nil
+	return mime, err
 }
 
 func run_filter(section_name string, filter string, url *url.URL, config *Config, handler Handler) ([]string, string) {
@@ -142,13 +139,12 @@ func handle_uri(raw_url string, config *Config) {
 	}
 
 	parts := strings.Split(url.Path, ".")
-
-	mime_type, err := get_mime_type(url)
+	extension := parts[len(parts)-1]
+	mime_type, err := get_mime_type(url, raw_url)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not get mime type for %s: %v\n", url.String(), err)
 		return
 	}
-	extension := parts[len(parts)-1]
 
 	runner := config.Browser
 

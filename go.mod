@@ -9,4 +9,8 @@ require (
 	gopkg.in/ini.v1 v1.66.2
 )
 
-require golang.org/x/sys v0.0.0-20211025201205-69cdffdb9359 // indirect
+require (
+	github.com/gabriel-vasile/mimetype v1.4.0 // indirect
+	golang.org/x/net v0.0.0-20210505024714-0287a6fb4125 // indirect
+	golang.org/x/sys v0.0.0-20211025201205-69cdffdb9359 // indirect
+)
