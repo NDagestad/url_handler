@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	_ "mime"
+	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
@@ -55,12 +55,21 @@ func get_mime_type(ressource *url.URL, raw_url string) (string, error) {
 	)
 
 	switch ressource.Scheme {
+	case "http":
+		fallthrough
+	case "https":
+		resp, err := http.Head(ressource.String())
+		if err == nil {
+			mime = resp.Header["Content-Type"][0]
+		}
 	case "file":
 		fallthrough
 	case "":
-		var mtype *mimetype.MIME
-		mtype, err = mimetype.DetectFile(raw_url)
-		mime = mtype.String()
+		//var mtype *mimetype.MIME
+		mtype, err := mimetype.DetectFile(raw_url)
+		if err == nil {
+			mime = mtype.String()
+		}
 	}
 	return mime, err
 }
@@ -145,7 +154,6 @@ func handle_uri(raw_url string, config *Config) {
 	mime_type, err := get_mime_type(url, raw_url)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not get mime type for %s: %v\n", url.String(), err)
-		return
 	}
 
 	runner := config.Browser
