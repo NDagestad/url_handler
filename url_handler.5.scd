@@ -92,6 +92,20 @@ will be tried is not unknown.
 	And lastly, if there is a password in the URI, it is sent to the filter over
 	it's stdin.
 
+# VARIABLES
+
+You can defines variables in the *DEFAULT SECTION* that can then be reused in
+values in other section like so:
+
+```
+name=VALUE
+.
+.
+.
+[filter]
+exec=executabl %(name)s args
+mime_type=file/whatever
+```
 
 # FILES
 
@@ -105,7 +119,11 @@ this order:
 (If they are unset, *$XDG_CONFIG_HOME* will normaly  default to *$HOME/.config* and
 *$XDG_CONFIG_DIRS* to */etc/xdg*)
 
+# NOTE
 
+The default values are not necessarily the same values as in the config file.
+This could be seen as a bug, but it is to make the program more usable right
+after installation.
 
 # SEE ALSO
 
