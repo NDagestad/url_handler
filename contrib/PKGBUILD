@@ -1,0 +1,34 @@
+# Maintainer: Nicolai Dagestad <aur@nicolai.dagestad.fr>
+pkgname='url_handler-git'
+pkgver=r26.2465caa
+pkgrel=1
+arch=('x86_64' 'aarch64')
+licence=('GPL3')
+pkgdesc="A little go program to handle opening URI/URLs for you"
+makedepends=('go' 'git')
+provides=("${pkgname%-git}")
+conflicts=("${pkgname%-git}")
+source=('git+https://git.dagestad.fr/~nicolai/url_handler')
+md5sums=('SKIP')
+
+pkgver() {
+	cd "${pkgname%-git}"
+	# Git tag:
+	#printf "%s" "$(git describe --long | sed 's/\([^-]*-\)g/r\1/;s/-/./g')"
+	# No Git tag:
+	printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+	export GOPATH="$srcdir"
+	cd "$srcdir/${pkgname%-git}"
+	go build
+}
+
+package() {
+	export GOPATH="$srcdir"
+	cd "$srcdir/${pkgname%-git}"
+	# TODO installation
+	install -Dm 755 url_handler -t "$pkgdir/usr/bin";
+	install -Dm 755 config.example.ini "$pkgdir/etc/xdg/url_handler/config.ini"
+}
