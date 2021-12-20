@@ -1,6 +1,6 @@
 # Maintainer: Nicolai Dagestad <aur@nicolai.dagestad.fr>
 pkgname='url_handler-git'
-pkgver=r32.9f87624
+pkgver=r33.0eb9e8b
 pkgrel=1
 arch=('x86_64' 'aarch64')
 licence=('GPL3')
@@ -30,9 +30,10 @@ build() {
 package() {
 	export GOPATH="$srcdir"
 	cd "$srcdir/${pkgname%-git}"
-	# TODO installation
 	install -Dm 755 url_handler -t "$pkgdir/usr/bin";
 	install -Dm 755 config.example.ini "$pkgdir/etc/xdg/url_handler/config.ini"
 	install -Dm 755 url_handler.1.gz -t "$pkgdir/usr/share/man/man1"
 	install -Dm 755 url_handler.5.gz -t "$pkgdir/usr/share/man/man5"
+	# For when I add some default filters
+	mkdir -p "$pkgdir/usr/share/url_handler"
 }
