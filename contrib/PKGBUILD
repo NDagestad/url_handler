@@ -1,11 +1,11 @@
 # Maintainer: Nicolai Dagestad <aur@nicolai.dagestad.fr>
 pkgname='url_handler-git'
-pkgver=r26.2465caa
-pkgrel=1
+pkgver=r30.1c21787
+pkgrel=2
 arch=('x86_64' 'aarch64')
 licence=('GPL3')
 pkgdesc="A little go program to handle opening URI/URLs for you"
-makedepends=('go' 'git')
+makedepends=('go' 'git' 'scdoc')
 provides=("${pkgname%-git}")
 conflicts=("${pkgname%-git}")
 source=('git+https://git.dagestad.fr/~nicolai/url_handler')
@@ -23,6 +23,8 @@ build() {
 	export GOPATH="$srcdir"
 	cd "$srcdir/${pkgname%-git}"
 	go build
+	scdoc < url_handler.1.scd | gzip > url_handler.1.gz
+	scdoc < url_handler.5.scd | gzip > url_handler.5.gz
 }
 
 package() {
@@ -31,4 +33,6 @@ package() {
 	# TODO installation
 	install -Dm 755 url_handler -t "$pkgdir/usr/bin";
 	install -Dm 755 config.example.ini "$pkgdir/etc/xdg/url_handler/config.ini"
+	install -Dm 755 url_handler.1.gz -t "$pkgdir/usr/share/man/man1"
+	install -Dm 755 url_handler.5.gz -t "$pkgdir/usr/share/man/man5"
 }
