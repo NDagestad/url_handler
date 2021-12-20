@@ -17,8 +17,6 @@ import (
 	"gopkg.in/ini.v1"
 )
 
-
-
 type Config struct {
 	Browser         []string
 	ProgramLauncher []string
@@ -62,7 +60,10 @@ func get_mime_type(ressource *URL) (string, error) {
 	case "https":
 		resp, err := http.Head(ressource.String())
 		if err == nil {
-			mime = resp.Header["Content-Type"][0]
+			resp := resp.Header["Content-Type"]
+			if resp != nil {
+				mime = resp[0]
+			}
 		}
 	case "file":
 		fallthrough
