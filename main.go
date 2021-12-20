@@ -25,6 +25,7 @@ type Config struct {
 	FilterPath      string
 	FilterShell     []string
 	ClipboardCmd    []string
+	Detach          bool
 	TypeHandlers    map[string]Handler
 }
 
@@ -267,7 +268,11 @@ handler:
 	log("Handling the url with: %#v\n", cmdline)
 
 	// TODO make the program fork to not hang waiting for the cmd to exit
-	err = cmd.Run()
+	if config.Detach {
+		err = cmd.Start()
+	} else {
+		err = cmd.Run()
+	}
 	if err != nil {
 		fmt.Printf("Error running the command: %v\n", err)
 		return
@@ -346,6 +351,12 @@ func main() {
 				fmt.Fprintf(os.Stderr, "Cannot understand %s as a shell command (from the %s section)\n",
 					clipboard_cmd_line, section.Name())
 				return
+			}
+
+			config.Detach, err = section.Key("detach_on_exec").Bool()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "\"%s\" is not a valid boolean value\n", section.Key("detach_on_exec").String())
+				fmt.Fprintf(os.Stderr, "The option is ignored and the default value (false) will be used instead\n")
 			}
 			continue
 		}

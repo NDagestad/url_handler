@@ -30,15 +30,15 @@ This section does not need to be named, in it you will find these options:
 
 *filter_shell*
 	The shell used to launch the filters. If unset, the filter will be launched as
-	if it is an executable. Defaults to unset.
+	if it is an executable (so don't forget your shebangs!). Defaults to unset.
 
 *clipboard_cmd*
 	The shell command to use to get the content of the clipboard. Each line will
 	be treated as a URI. Defaults to unset.
 
 *detach_on_exec*
-	Not used yet, will make *url_handler* not wait for the end of whatever
-	process it launches. Defaults to unset.
+	Makes *url_handler* not wait for the end of whatever process it launches.
+	Defaults to false.
 
 
 All the options specifying an executable can handle arguments. 
