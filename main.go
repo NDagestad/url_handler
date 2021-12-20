@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -17,6 +16,8 @@ import (
 	"github.com/google/shlex"
 	"gopkg.in/ini.v1"
 )
+
+
 
 type Config struct {
 	Browser         []string
@@ -47,7 +48,7 @@ func log(format string, args ...interface{}) {
 	}
 }
 
-func get_mime_type(ressource *url.URL, raw_url string) (string, error) {
+func get_mime_type(ressource *URL) (string, error) {
 
 	var (
 		mime string
@@ -65,19 +66,20 @@ func get_mime_type(ressource *url.URL, raw_url string) (string, error) {
 	case "file":
 		fallthrough
 	case "":
-		//var mtype *mimetype.MIME
-		mtype, err := mimetype.DetectFile(raw_url)
+		mtype, err := mimetype.DetectFile(ressource.Path)
 		if err == nil {
 			mime = mtype.String()
+		} else {
+			log("Error getting mime type\n")
 		}
 	}
 	return mime, err
 }
 
-func run_filter(section_name string, filter string, url *url.URL, config *Config, handler Handler) ([]string, string) {
+func run_filter(section_name string, filter string, url *URL, config *Config, handler Handler) ([]string, string) {
 	var executable string
 	if config.FilterPath != "" {
-		executable = path.Join(config.FilterPath, filter)
+		executable = filepath.Join(config.FilterPath, filter)
 		_, err := os.Stat(executable)
 		if err != nil {
 			if section_name != filter {
@@ -131,27 +133,15 @@ func run_filter(section_name string, filter string, url *url.URL, config *Config
 
 func handle_uri(raw_url string, config *Config) {
 
-	//TODO Make a wrapper around this to make a fake url struct if the file is local
-	// as to not have to lump raw_url around all the time
-	url, err := url.Parse(raw_url)
+	url, err := Parse(raw_url)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error in parsing the url %v\n", err)
 		return
 	}
 
-	if url.Scheme == "" {
-		log("Expanding potential tildes in the path\n")
-		raw_url = expandTilde(raw_url)
-		url, err = url.Parse(raw_url)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error in reparsing the url after expanding the tilde %v\n", err)
-			return
-		}
-	}
-
 	parts := strings.Split(url.Path, ".")
 	extension := parts[len(parts)-1]
-	mime_type, err := get_mime_type(url, raw_url)
+	mime_type, err := get_mime_type(url)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not get mime type for %s: %v\n", url.String(), err)
 	}
@@ -266,12 +256,17 @@ handler:
 	}
 
 	cmdline = append(cmdline, runner...)
-	raw_url = "\"" + raw_url + "\"" // Quoting the url should be enough to not get interferences in the shell
-	cmdline = append(cmdline, raw_url)
+	if url.Scheme == "file" {
+		cmdline = append(cmdline, url.Path)
+	} else {
+		// TODO handle special character getting mangled in encoding/decoding
+		cmdline = append(cmdline, url.String())
+	}
 	cmd := exec.Command(cmdline[0], cmdline[1:]...)
 
 	log("Handling the url with: %#v\n", cmdline)
 
+	// TODO make the program fork to not hang waiting for the cmd to exit
 	err = cmd.Run()
 	if err != nil {
 		fmt.Printf("Error running the command: %v\n", err)
@@ -282,7 +277,7 @@ handler:
 func expandTilde(s string) string {
 	if strings.HasPrefix(s, "~/") {
 		dirname, _ := os.UserHomeDir()
-		s = path.Join(dirname, s[2:])
+		s = filepath.Join(dirname, s[2:])
 	}
 	return s
 }
@@ -296,8 +291,8 @@ func main() {
 	debug = flag.Bool("debug", false, "Enable debug output")
 	flag.Parse()
 
-	AppName = path.Base(os.Args[0])
-	configFile, err := xdg.SearchConfigFile(path.Join(AppName, "config.ini"))
+	AppName = filepath.Base(os.Args[0])
+	configFile, err := xdg.SearchConfigFile(filepath.Join(AppName, "config.ini"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not load config file: %v\n", err)
 		return
