@@ -1,2 +1,18 @@
 Prog:
-* Automaically spawning stuff in the background
+	* Add exclusion conditions
+	* Make it configurable what conditions make a URI match
+		* Have a logical clause evalutaed e.g.: 
+			(ext && scheme) || (mime && !scheme) || url
+			* Where !name would be not matching the exclusion condition for that name ?
+		* Reduce the logical clause to it's simplest form ? Might be hard
+		* Notify the user if they defined a condition but it has no effet in the
+			clause (will need the previous point to be doable)
+		*  Maybe do this in a filter; another language might handle the
+			problem better
+	
+	* Make exec parametrized e.g.: %u for the URI to handle, and maybe more %s
+	* 	for the section, %p for the scheme (protocol), %e extension etc
+
+
+PKGBUILD
+	* Backup config on upgrade or deletion
