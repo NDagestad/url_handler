@@ -1,6 +1,6 @@
 # Maintainer: Nicolai Dagestad <aur@nicolai.dagestad.fr>
 pkgname='url_handler-git'
-pkgver=r33.0eb9e8b
+pkgver=r36.9cfd177
 pkgrel=1
 arch=('x86_64' 'aarch64')
 licence=('GPL3')
@@ -8,6 +8,7 @@ pkgdesc="A little go program to handle opening URI/URLs for you"
 makedepends=('go' 'git' 'scdoc')
 provides=("${pkgname%-git}")
 conflicts=("${pkgname%-git}")
+backup=('etc/xdg/url_handler/config.ini')
 source=('git+https://git.dagestad.fr/~nicolai/url_handler')
 md5sums=('SKIP')
 

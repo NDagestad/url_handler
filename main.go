@@ -268,7 +268,6 @@ handler:
 
 	log("Handling the url with: %#v\n", cmdline)
 
-	// TODO make the program fork to not hang waiting for the cmd to exit
 	if config.Detach {
 		err = cmd.Start()
 	} else {
