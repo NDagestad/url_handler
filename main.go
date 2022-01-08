@@ -68,12 +68,17 @@ func get_mime_type(ressource *URL) (string, error) {
 	case "file":
 		fallthrough
 	case "":
-		mtype, err := mimetype.DetectFile(ressource.Path)
+		//TODO check if path is a directory, the library does not handle them
+		// Maybe I could ask if they want to support directories as well but I doubt it
+		mtype, err_ := mimetype.DetectFile(ressource.Path)
 		if err == nil {
 			mime = mtype.String()
 		} else {
-			log("Error getting mime type\n")
+			log("Error getting mime type: %v\n")
 		}
+		// FIXME Yikes, I should look into variable shadowing rules but I think err was being create
+		// as a new variable here and therefor th function did not return the error
+		err = err_
 	}
 	return mime, err
 }
@@ -154,12 +159,6 @@ handler:
 	for name, handler := range config.TypeHandlers {
 		log("Checking matchs for %s\n", name)
 		for _, p := range handler.Protocols {
-			if p == "" {
-				// Issue reported and solution proposed
-				// FIXME: workaround for go-ini giving us an array with an empty string instead
-				//of an empty array
-				break
-			}
 			if p == url.Scheme {
 				log("Matched with the protocol for %#v\n", p)
 				runner = handler.Program
@@ -167,11 +166,6 @@ handler:
 			}
 		}
 		for _, mime := range handler.MimeTypes {
-			if mime == "" {
-				// FIXME: workaround for go-ini giving us an array with an empty string instead
-				//of an empty array
-				break
-			}
 			matched, err := regexp.MatchString(mime, mime_type)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "%s is not a valide regex, ignored...\n", mime)
@@ -185,11 +179,6 @@ handler:
 		}
 
 		for _, ext := range handler.Extensions {
-			if ext == "" {
-				// FIXME: workaround for go-ini giving us an array with an empty string instead
-				//of an empty array
-				break
-			}
 			if ext == extension {
 				log("Matched with the extension for %#v\n", ext)
 				runner = handler.Program
@@ -197,11 +186,6 @@ handler:
 			}
 		}
 		for _, reg := range handler.UrlRegexs {
-			if reg == "" {
-				// FIXME: workaround for go-ini giving us an array with an empty string instead
-				//of an empty array
-				break
-			}
 			matched, err := regexp.MatchString(reg, raw_url)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error matching the url to a regex: %v\n", err)
@@ -219,11 +203,6 @@ handler:
 		)
 
 		for _, filter := range handler.Filters {
-			if filter == "" {
-				// FIXME: workaround for go-ini giving us an array with an empty string instead
-				//of an empty array
-				break
-			}
 			new_runner, new_url = run_filter(name, filter, url, config, handler)
 			if new_url != "" {
 				//TODO: do something to replace the current url
@@ -236,8 +215,7 @@ handler:
 				break handler
 			}
 		}
-		//if len(handler.Filters) == 0 {
-		if handler.Filters[0] == "" { //FIXME: workaround for the above go-ini bug
+		if len(handler.Filters) == 0 {
 			new_runner, new_url = run_filter(name, name, url, config, handler)
 			if new_url != "" {
 				//TODO: do something to replace the current url
