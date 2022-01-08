@@ -20,7 +20,7 @@ with the program you have configured it to use.
 # FILES
 
 *url_handler* follows the XDG_BASE_DIRECTORY specification so configuration
-files should be in XDG_CONFIG_HOME, see *url_handler*(5) for more on that.
+files should be in *$XDG_CONFIG_HOME*, see *url_handler*(5) for more on that.
 
 # SEE ALSO
 

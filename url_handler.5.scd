@@ -114,20 +114,23 @@ name=VALUE
 .
 .
 [filter]
-exec=executabl %(name)s args
+exec=executable %(name)s args
 mime_type=file/whatever
 ```
 
 # FILES
 
 *url_handler* (tries to) follow the XDG_BASE_DIRECTORY specification. THe
-configuration file should therefor be in $XDG_CONFIG_HOME. 
+configuration file should therefor be in *$XDG_CONFIG_HOME*. 
 When looking for it's config file url_handler will look for these files in
 this order:
 	- *$XDG_CONFIG_HOME/url_handler/config.ini*
-	- *$XDG_CONFIG_DIRS/url_handler/config.ini*
+	- *$XDG_CONFIG_DIRS/url_handler/config.ini* 
 
-(If they are unset, *$XDG_CONFIG_HOME* will normaly  default to *$HOME/.config* and
+*$XDG_CONFIG_DIRS* is a list, each directory will be tried until a config file is
+found.
+
+(If they are unset, *$XDG_CONFIG_HOME* will normaly default to *$HOME/.config* and
 *$XDG_CONFIG_DIRS* to */etc/xdg*)
 
 # NOTE
@@ -135,6 +138,13 @@ this order:
 The default values are not necessarily the same values as in the config file.
 This could be seen as a bug, but it is to make the program more usable right
 after installation.
+
+# BUGS
+
+If a *url_regex* contains a comma (,), the ini parser will probably try to split
+it and treat it as 2 separate *url_regex* entries. I have not tested this so it 
+remains to be confirmed, maybe the comma can be escaped. If somebody can confirm 
+test it and send a patch if the bug is confirmed that would be greatly apreciated 👍
 
 # SEE ALSO
 
