@@ -1,0 +1,5 @@
+#!/bin/sh
+# vim: syntax=sh
+
+[ "$protocol" = "file" ] || [ -z "$protocol" ] || exit 1
+[ -d $path ] && exit 0 || exit 1 

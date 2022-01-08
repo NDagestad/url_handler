@@ -47,10 +47,11 @@ All the options specifying an executable can handle arguments.
 
 Each named section corresponds to a type of ressource to handle.
 The name of the section has not really any importance, but it is the name of the
-default filter to execute if none is specified with the *filter* option.
+default filter to execute if none is specified with the *filter* option (See
+section *FILTERS* for more info on filters).
 Here as well, arguments specifying executables can handle argments.
 All options except for *exec* can appeare multiple times. They can also contain
-a coma (,) separated list of values. for *url_regex*s this is not recommended
+a comma (,) separated list of values. For *url_regex*s this is not recommended
 though as this might not work properly with the regex. (Has not been tested,
 there might be a bug there) All these values defaults to unset.
 
@@ -77,20 +78,30 @@ will be tried is not unknown.
 	Regexs that matche URIs for this ressource.
 
 *filter*
-	Program to run on the URI. This programm must return 0 if the URI should
-	match for this ressource type and 1 if it should not match. Any other value
-	is treated a if an error occured.
+	Program to run on the URI. See section *FILTERS* for more information on
+	them.
 
-	A context is passed to the filter in the following environment variables:
-	- *url* the raw URI beeing handled
-	- *protocol* the protocol of this URI
-	- *user* the user of this URI
-	- *host* the host part of this URI
-	- *path* the path of the ressource in this URI
-	- *section* the name of the section that called the filter
 
-	And lastly, if there is a password in the URI, it is sent to the filter over
-	it's stdin.
+# FILTERS
+
+Matching URIs is a complex task, and sometimes the matching behaviour
+*url_handler* proposes is not flexible enough. For those cases, an external
+program can be run to determine if a URI should matche or not for a given
+section.
+
+This programm must return 0 if the URI should match for this ressource type 
+and 1 if it should not match. Any other value is treated a if an error occured.
+
+The context is passed to the filter in the following environment variables:
+- *url* the raw URI beeing handled
+- *protocol* the protocol of this URI
+- *user* the user of this URI
+- *host* the host part of this URI
+- *path* the path of the ressource in this URI
+- *section* the name of the section that called the filter
+
+And lastly, if there is a password in the URI, it is sent to the filter over
+it's stdin.
 
 # VARIABLES
 
