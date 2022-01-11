@@ -271,6 +271,17 @@ func expandTilde(s string) string {
 }
 
 func main() {
+	flag.Usage = func() {
+		exec_name := filepath.Base(os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage %s:\n", exec_name)
+		fmt.Fprintf(os.Stderr, "  %s [OPTIONS] URIs...\n", exec_name)
+		fmt.Fprintf(os.Stderr, "  some_command | %s [OPTIONS]\n", exec_name)
+		fmt.Fprintf(os.Stderr, "  %s [OPTIONS] (will read from the clipboard)\n", exec_name)
+		fmt.Fprintf(os.Stderr, "\nOPTIONS\n")
+		fmt.Fprintf(os.Stderr, "    -debug Enable verbose output for debuging\n")
+		fmt.Fprintf(os.Stderr, "\n")
+	}
+
 	config := &Config{
 		Browser:      []string{"xdg-open"},
 		TypeHandlers: make(map[string]Handler),
