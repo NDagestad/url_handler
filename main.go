@@ -70,6 +70,11 @@ func get_mime_type(ressource *URL) (string, error) {
 	case "":
 		//TODO check if path is a directory, the library does not handle them
 		// Maybe I could ask if they want to support directories as well but I doubt it
+		info, err := os.Stat(ressource.Path)
+		if !os.IsNotExist(err) && info.IsDir() {
+			return "inode/directory", nil
+		}
+
 		mtype, err_ := mimetype.DetectFile(ressource.Path)
 		if err == nil {
 			mime = mtype.String()
