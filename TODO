@@ -13,4 +13,4 @@ Prog:
 	* Make exec parametrized e.g.: %u for the URI to handle, and maybe more %s
 		for the section, %p for the scheme (protocol), %e extension etc
 	
-	* Make the section test order deterministic
+	* Add mltiple loglevels
