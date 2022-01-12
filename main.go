@@ -390,6 +390,7 @@ func main() {
 			raw_urls = strings.Split(string(data), "\n")
 			log("Data read from stdin: %v\n", raw_urls)
 		} else {
+			log("reading from the clipboard\n")
 			if len(config.ClipboardCmd) == 0 {
 				fmt.Fprintf(os.Stderr, "No clipboard command\n")
 				return
