@@ -57,8 +57,8 @@ there might be a bug there) All these values defaults to unset.
 
 The matching process follows the order in which the options are listed here.
 On the first match, the search is stopped and the *exec* corresponding to that 
-section is used to handle the URI. The order in which the different sections
-will be tried is not unknown.
+section is used to handle the URI. Section are matched against each URI in the
+order in which they appear in the configuration file..
 
 *exec*
 	The only mandatory option, and the only one that must be unique for the
