@@ -24,10 +24,11 @@ type Config struct {
 	FilterShell     []string
 	ClipboardCmd    []string
 	Detach          bool
-	TypeHandlers    map[string]Handler
+	TypeHandlers    []Handler
 }
 
 type Handler struct {
+	Name       string
 	Program    []string
 	Extensions []string
 	Filters    []string
@@ -88,13 +89,13 @@ func get_mime_type(ressource *URL) (string, error) {
 	return mime, err
 }
 
-func run_filter(section_name string, filter string, url *URL, config *Config, handler Handler) ([]string, string) {
+func run_filter(filter string, url *URL, config *Config, handler Handler) ([]string, string) {
 	var executable string
 	if config.FilterPath != "" {
 		executable = filepath.Join(config.FilterPath, filter)
 		_, err := os.Stat(executable)
 		if err != nil {
-			if section_name != filter {
+			if handler.Name != filter {
 				fmt.Fprintf(os.Stderr, "Could not run the filter \"%s\": %s\n", filter, err)
 			}
 			return nil, ""
@@ -111,7 +112,7 @@ func run_filter(section_name string, filter string, url *URL, config *Config, ha
 	env = append(env, fmt.Sprintf("user=%s", url.User.Username()))
 	env = append(env, fmt.Sprintf("host=%s", url.Host))
 	env = append(env, fmt.Sprintf("path=%s", url.Path))
-	env = append(env, fmt.Sprintf("section=%s", section_name))
+	env = append(env, fmt.Sprintf("section=%s", handler.Name))
 	cmd_stdin, err := cmd.StdinPipe()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not get a pipe to the filters stdin: %v\n", err)
@@ -161,7 +162,8 @@ func handle_uri(raw_url string, config *Config) {
 	runner := config.Browser
 
 handler:
-	for name, handler := range config.TypeHandlers {
+	for _, handler := range config.TypeHandlers {
+		name := handler.Name
 		log("Checking matchs for %s\n", name)
 		for _, p := range handler.Protocols {
 			if p == url.Scheme {
@@ -208,7 +210,7 @@ handler:
 		)
 
 		for _, filter := range handler.Filters {
-			new_runner, new_url = run_filter(name, filter, url, config, handler)
+			new_runner, new_url = run_filter(filter, url, config, handler)
 			if new_url != "" {
 				//TODO: do something to replace the current url
 				log("(%s):A filter gave us a new url: %s\n", filter, new_url)
@@ -221,7 +223,7 @@ handler:
 			}
 		}
 		if len(handler.Filters) == 0 {
-			new_runner, new_url = run_filter(name, name, url, config, handler)
+			new_runner, new_url = run_filter(name, url, config, handler)
 			if new_url != "" {
 				//TODO: do something to replace the current url
 				log("(%s)The default filter gave us a new url: %s\n", name, new_url)
@@ -283,8 +285,7 @@ func main() {
 	}
 
 	config := &Config{
-		Browser:      []string{"xdg-open"},
-		TypeHandlers: make(map[string]Handler),
+		Browser: []string{"xdg-open"},
 	}
 
 	debug = flag.Bool("debug", false, "Enable debug output")
@@ -354,27 +355,21 @@ func main() {
 			}
 			continue
 		}
-		_, exists := config.TypeHandlers[section.Name()]
-		if !exists {
-			handler := Handler{}
-			prog_cmd_line := section.Key("exec").String()
-			handler.Program, err = shlex.Split(prog_cmd_line)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Cannot understand %s (from the %s section) as a shell command\n",
-					prog_cmd_line, section.Name())
-			}
-			handler.Extensions = section.Key("extensions").StringsWithShadows(",")
-			handler.Filters = section.Key("filter").StringsWithShadows(",")
-			handler.MimeTypes = section.Key("mime_type").StringsWithShadows(",")
-			handler.Protocols = section.Key("protocol").StringsWithShadows(",")
-			handler.UrlRegexs = section.Key("url_regex").StringsWithShadows(",")
-			config.TypeHandlers[section.Name()] = handler
-
-		} else {
-			fmt.Fprintf(os.Stderr, "There is more than one %s section, section names should be unique, exiting\n",
-				section.Name())
-			return
+		handler := Handler{}
+		prog_cmd_line := section.Key("exec").String()
+		handler.Program, err = shlex.Split(prog_cmd_line)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Cannot understand %s (from the %s section) as a shell command\n",
+				prog_cmd_line, section.Name())
 		}
+		handler.Extensions = section.Key("extensions").StringsWithShadows(",")
+		handler.Filters = section.Key("filter").StringsWithShadows(",")
+		handler.MimeTypes = section.Key("mime_type").StringsWithShadows(",")
+		handler.Protocols = section.Key("protocol").StringsWithShadows(",")
+		handler.UrlRegexs = section.Key("url_regex").StringsWithShadows(",")
+		handler.Name = section.Name()
+
+		config.TypeHandlers = append(config.TypeHandlers, handler)
 	}
 	// Setup complete, let's goooo !
 
