@@ -14,3 +14,7 @@ Prog:
 		for the section, %p for the scheme (protocol), %e extension etc
 	
 	* Add mltiple loglevels
+
+BUG:
+	* Segfault when handling the output of `ls ld --hyperlink=always d`
+		* There is no way for the program to handle it correctly, but it should fail gracefully
