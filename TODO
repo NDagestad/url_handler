@@ -1,4 +1,4 @@
-Prog:
+Goals for beta release
 	* Add exclusion conditions
 	* Make it configurable what conditions make a URI match
 		* Have a logical clause evalutaed e.g.: 
