@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -132,7 +132,7 @@ func run_filter(filter string, url *URL, config *Config, handler Handler) ([]str
 	if err != nil && cmd.ProcessState.ExitCode() != 1 {
 		fmt.Fprintf(os.Stderr, "Error running the filter \"%s\": %s\n", filter, err)
 	} else if cmd.ProcessState.ExitCode() == 0 {
-		new_url, err := ioutil.ReadAll(cmd_stdout)
+		new_url, err := io.ReadAll(cmd_stdout)
 		if err != nil {
 			log("Error reading stdout from the filter (%s) output: %v\n", filter, err)
 		}
@@ -382,7 +382,7 @@ func main() {
 			return
 		}
 		if info.Mode()&os.ModeNamedPipe != 0 {
-			data, err := ioutil.ReadAll(os.Stdin)
+			data, err := io.ReadAll(os.Stdin)
 			if err != nil {
 				flag.Usage()
 				return
@@ -407,7 +407,7 @@ func main() {
 				fmt.Fprintf(os.Stderr, "Error running the clipboard command: %v\n", err)
 				return
 			}
-			data, err := ioutil.ReadAll(clipboard_output)
+			data, err := io.ReadAll(clipboard_output)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error getting data from the clipboard command: %v\n", err)
 				return
