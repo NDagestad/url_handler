@@ -81,6 +81,10 @@ order in which they appear in the configuration file..
 	Program to run on the URI. See section *FILTERS* for more information on
 	them.
 
+*match_expression*
+	A logical expression controling what parameters are used and how when
+	trying to match an URI, see the *MATCHING* section for more detatils.
+
 
 # FILTERS
 
@@ -102,6 +106,38 @@ The context is passed to the filter in the following environment variables:
 
 And lastly, if there is a password in the URI, it is sent to the filter over
 it's stdin.
+
+# MATCHING
+
+By default, a URI is tried matching with the following logic:
+```
+extension || filter || mime_type || protocol || url_regex
+```
+So if any of this parameters match, the URI is seen as matching and the program
+defined by *exec* is ran.
+
+For more flexibility, this behaviour can be changed by setting another
+expression.
+
+A matching expression support a rather classical logique syntax with
+parenthesis, *||* for ORing, *&&* for ANDing, and *!* for inverting the value.
+
+You can also use ternary operations with the same syntax as in C:
+```
+expr ? true : false
+```
+but you might be going a litle far there, what kind or
+twited logic do you need to handle if you have to use conditional matching in
+your configuration. 
+
+(More than what is listed here is handle because of the underlying go library
+being used, but this is what is most applicable to this utility. If you want to
+have fun you can look here https://github.com/PaesslerAG/gval. This program 
+uses the defaul language)
+
+The names used in the expression are the same as used for the parameters, except
+for *extensions* which is called *extension* in the match expression.
+
 
 # VARIABLES
 
@@ -145,6 +181,9 @@ If a *url_regex* contains a comma (,), the ini parser will probably try to split
 it and treat it as 2 separate *url_regex* entries. I have not tested this so it 
 remains to be confirmed, maybe the comma can be escaped. If somebody can confirm 
 test it and send a patch if the bug is confirmed that would be greatly apreciated 👍
+
+If a *URI* passed to the programm contains non-printable caracters, the program
+might crash.
 
 # SEE ALSO
 
