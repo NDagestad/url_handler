@@ -3,6 +3,7 @@ module git.dagestad.fr/~nicolai/url_handler
 go 1.17
 
 require (
+	github.com/PaesslerAG/gval v1.1.2
 	github.com/adrg/xdg v0.4.0
 	github.com/gabriel-vasile/mimetype v1.4.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510

@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/PaesslerAG/gval"
 	"github.com/adrg/xdg"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/google/shlex"
@@ -28,13 +29,14 @@ type Config struct {
 }
 
 type Handler struct {
-	Name       string
-	Program    []string
-	Extensions []string
-	Filters    []string
-	MimeTypes  []string
-	Protocols  []string
-	UrlRegexs  []string
+	Name            string
+	Program         []string
+	Extensions      []string
+	Filters         []string
+	MimeTypes       []string
+	Protocols       []string
+	UrlRegexs       []string
+	MatchExpression string
 }
 
 var (
@@ -69,8 +71,8 @@ func get_mime_type(ressource *URL) (string, error) {
 	case "file":
 		fallthrough
 	case "":
-		//TODO check if path is a directory, the library does not handle them
-		// Maybe I could ask if they want to support directories as well but I doubt it
+		// check if path is a directory, the library does not handle them
+		// TODO Maybe I could ask if they want to support directories as well but I doubt it
 		info, err := os.Stat(ressource.Path)
 		if !os.IsNotExist(err) && info.IsDir() {
 			return "inode/directory", nil
@@ -89,7 +91,7 @@ func get_mime_type(ressource *URL) (string, error) {
 	return mime, err
 }
 
-func run_filter(filter string, url *URL, config *Config, handler Handler) ([]string, string) {
+func run_filter(filter string, url *URL, config *Config, handler Handler) (bool, string) {
 	var executable string
 	if config.FilterPath != "" {
 		executable = filepath.Join(config.FilterPath, filter)
@@ -98,7 +100,7 @@ func run_filter(filter string, url *URL, config *Config, handler Handler) ([]str
 			if handler.Name != filter {
 				fmt.Fprintf(os.Stderr, "Could not run the filter \"%s\": %s\n", filter, err)
 			}
-			return nil, ""
+			return false, ""
 		}
 	} else {
 		executable = filter
@@ -136,12 +138,12 @@ func run_filter(filter string, url *URL, config *Config, handler Handler) ([]str
 		if err != nil {
 			log("Error reading stdout from the filter (%s) output: %v\n", filter, err)
 		}
-		return handler.Program, string(new_url)
+		return true, string(new_url)
 	} else if cmd.ProcessState.ExitCode() == 1 {
 		log("Filter (%s) returned 1\n", filter)
-		return nil, ""
+		return false, ""
 	}
-	return nil, ""
+	return false, ""
 }
 
 func handle_uri(raw_url string, config *Config) {
@@ -161,79 +163,77 @@ func handle_uri(raw_url string, config *Config) {
 
 	runner := config.Browser
 
-handler:
 	for _, handler := range config.TypeHandlers {
+		params := map[string]bool{
+			"protocol":  false,
+			"mime_type": false,
+			"extension": false,
+			"url_regex": false,
+			"filter":    false,
+		}
 		name := handler.Name
 		log("Checking matchs for %s\n", name)
 		for _, p := range handler.Protocols {
 			if p == url.Scheme {
 				log("Matched with the protocol for %#v\n", p)
-				runner = handler.Program
-				break handler
+				params["protocol"] = true
 			}
 		}
 		for _, mime := range handler.MimeTypes {
 			matched, err := regexp.MatchString(mime, mime_type)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "%s is not a valide regex, ignored...\n", mime)
+				fmt.Fprintf(os.Stderr, "[mime]: %s is not a valide regex, ignored...\n", mime)
 				continue
 			}
 			if matched {
 				log("Matched with the mime-type for %#v\n", mime)
-				runner = handler.Program
-				break handler
+				params["mime_type"] = true
 			}
 		}
 
 		for _, ext := range handler.Extensions {
 			if ext == extension {
 				log("Matched with the extension for %#v\n", ext)
-				runner = handler.Program
-				break handler
+				params["extension"] = true
 			}
 		}
 		for _, reg := range handler.UrlRegexs {
 			matched, err := regexp.MatchString(reg, raw_url)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error matching the url to a regex: %v\n", err)
+				fmt.Fprintf(os.Stderr, "[url_regex]: %s is not a valide regex, ignored...\n", reg)
+				continue
 			} else if matched {
 				log("Matched with a regex for %#v\n", reg)
-				runner = handler.Program
-				break handler
+				params["url_regex"] = true
 			}
 		}
 
-		//TODO: support arguments for filters?
-		var (
-			new_runner []string
-			new_url    string
-		)
-
-		for _, filter := range handler.Filters {
-			new_runner, new_url = run_filter(filter, url, config, handler)
+		// TODO Handle the filter returning a new url
+		filter_handler := func(filter string) {
+			//TODO: support arguments for filters?
+			match, new_url := run_filter(filter, url, config, handler)
 			if new_url != "" {
 				//TODO: do something to replace the current url
 				log("(%s):A filter gave us a new url: %s\n", filter, new_url)
-				//break handler
 			}
-			if new_runner != nil {
-				runner = new_runner
+			if match {
 				log("Matched because of a filter: %s\n", filter)
-				break handler
+				params["filter"] = true
 			}
 		}
 		if len(handler.Filters) == 0 {
-			new_runner, new_url = run_filter(name, url, config, handler)
-			if new_url != "" {
-				//TODO: do something to replace the current url
-				log("(%s)The default filter gave us a new url: %s\n", name, new_url)
-				//break handler
-			}
-			if new_runner != nil {
-				runner = new_runner
-				log("Matched because of the default filter: %s\n", name)
-				break handler
-			}
+			filter_handler(name)
+		}
+		for _, filter := range handler.Filters {
+			filter_handler(filter)
+		}
+		matched, err := gval.Evaluate(handler.MatchExpression, params)
+		if err != nil {
+			log("Error in evaluating the MatchExpression: %v\n", err)
+		} else if matched == true {
+			// matched is an interface so I cannot just evaluate it in the condition
+			runner = handler.Program
+			break
 		}
 	}
 
@@ -355,7 +355,9 @@ func main() {
 			}
 			continue
 		}
-		handler := Handler{}
+		handler := Handler{
+			MatchExpression: "extension || filter || mime_type || protocol || url_regex",
+		}
 		prog_cmd_line := section.Key("exec").String()
 		handler.Program, err = shlex.Split(prog_cmd_line)
 		if err != nil {
@@ -367,6 +369,10 @@ func main() {
 		handler.MimeTypes = section.Key("mime_type").StringsWithShadows(",")
 		handler.Protocols = section.Key("protocol").StringsWithShadows(",")
 		handler.UrlRegexs = section.Key("url_regex").StringsWithShadows(",")
+		key, _ := section.GetKey("match_expression")
+		if key != nil {
+			handler.MatchExpression = key.String()
+		}
 		handler.Name = section.Name()
 
 		config.TypeHandlers = append(config.TypeHandlers, handler)
