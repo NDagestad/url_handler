@@ -40,8 +40,9 @@ type Handler struct {
 }
 
 var (
-	AppName string
-	debug   *bool
+	AppName       string
+	debug         *bool
+	VersionNumber string
 )
 
 func log(format string, args ...interface{}) {
@@ -231,6 +232,7 @@ func handle_uri(raw_url string, config *Config) {
 		if err != nil {
 			log("Error in evaluating the MatchExpression: %v\n", err)
 		} else if matched == true {
+			log("Matched the url for section %s\n", name)
 			// matched is an interface so I cannot just evaluate it in the condition
 			runner = handler.Program
 			break
@@ -280,7 +282,8 @@ func main() {
 		fmt.Fprintf(os.Stderr, "  some_command | %s [OPTIONS]\n", exec_name)
 		fmt.Fprintf(os.Stderr, "  %s [OPTIONS] (will read from the clipboard)\n", exec_name)
 		fmt.Fprintf(os.Stderr, "\nOPTIONS\n")
-		fmt.Fprintf(os.Stderr, "    -debug Enable verbose output for debuging\n")
+		fmt.Fprintf(os.Stderr, "    -debug    Enable verbose output for debuging\n")
+		fmt.Fprintf(os.Stderr, "    -version  Print the version and exist\n")
 		fmt.Fprintf(os.Stderr, "\n")
 	}
 
@@ -289,9 +292,18 @@ func main() {
 	}
 
 	debug = flag.Bool("debug", false, "Enable debug output")
+	version := flag.Bool("version", false, "Print the version")
 	flag.Parse()
 
-	AppName = filepath.Base(os.Args[0])
+	if len(AppName) == 0 {
+		AppName = filepath.Base(os.Args[0])
+	}
+
+	if *version {
+		fmt.Fprintf(os.Stderr, "%s: version %s\n", AppName, VersionNumber)
+		return
+	}
+
 	configFile, err := xdg.SearchConfigFile(filepath.Join(AppName, "config.ini"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not load config file: %v\n", err)
