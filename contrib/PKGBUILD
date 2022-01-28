@@ -1,6 +1,6 @@
 # Maintainer: Nicolai Dagestad <aur@nicolai.dagestad.fr>
 pkgname='url_handler-git'
-pkgver=r36.9cfd177
+pkgver=r58.f252002
 pkgrel=1
 arch=('x86_64' 'aarch64')
 licence=('GPL3')
@@ -23,7 +23,9 @@ pkgver() {
 build() {
 	export GOPATH="$srcdir"
 	cd "$srcdir/${pkgname%-git}"
-	go build
+	go build -ldflags \
+		"-X main.AppName=url_handler \
+		 -X main.VersionNumber=$pkgver"
 	scdoc < url_handler.1.scd | gzip > url_handler.1.gz
 	scdoc < url_handler.5.scd | gzip > url_handler.5.gz
 }
