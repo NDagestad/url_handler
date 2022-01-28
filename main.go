@@ -283,6 +283,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "  %s [OPTIONS] (will read from the clipboard)\n", exec_name)
 		fmt.Fprintf(os.Stderr, "\nOPTIONS\n")
 		fmt.Fprintf(os.Stderr, "    -debug    Enable verbose output for debuging\n")
+		fmt.Fprintf(os.Stderr, "    -help     Print the usage and exist\n")
 		fmt.Fprintf(os.Stderr, "    -version  Print the version and exist\n")
 		fmt.Fprintf(os.Stderr, "\n")
 	}
@@ -293,10 +294,16 @@ func main() {
 
 	debug = flag.Bool("debug", false, "Enable debug output")
 	version := flag.Bool("version", false, "Print the version")
+	help := flag.Bool("help", false, "Print help")
 	flag.Parse()
 
 	if len(AppName) == 0 {
 		AppName = filepath.Base(os.Args[0])
+	}
+
+	if *help {
+		flag.Usage()
+		return
 	}
 
 	if *version {
