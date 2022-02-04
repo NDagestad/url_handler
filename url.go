@@ -17,8 +17,7 @@ func Parse(raw_url string) (*URL, error) {
 	var new_url string
 	parsed, err := url.Parse(raw_url)
 	if err != nil {
-		// TODO do something if the parsing fails
-		log("Got an error while parsning: %v\n", err)
+		return nil, fmt.Errorf("Got an error while parsning: %v\n", err)
 	}
 
 	if parsed.Scheme == "" {
@@ -35,8 +34,7 @@ func Parse(raw_url string) (*URL, error) {
 		}
 		parsed, err = url.Parse(new_url)
 		if err != nil {
-			// TODO Trickle down this error message instead of directly printing it?
-			log("Error in reparsing the url after expanding the tilde %v\n", err)
+			return nil, fmt.Errorf("Error in reparsing the url after expanding the tilde: %v\n", err)
 		}
 	}
 
