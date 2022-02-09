@@ -14,7 +14,7 @@ type URL struct {
 }
 
 func Parse(raw_url string) (*URL, error) {
-	var new_url string
+	new_url := raw_url
 	parsed, err := url.Parse(raw_url)
 	if err != nil {
 		return nil, fmt.Errorf("Got an error while parsning: %v\n", err)
@@ -28,18 +28,26 @@ func Parse(raw_url string) (*URL, error) {
 			raw_url, err = filepath.Abs(raw_url)
 			log("Adding the file:// scheme to the url for disambiguation\n")
 			new_url = fmt.Sprintf("file://%s", raw_url)
-		} else { // If not we assume it is a URL
+			parsed, err = url.Parse(new_url)
+			if err != nil {
+				return nil, fmt.Errorf("Error in reparsing the url after expanding the tilde: %v\n", err)
+			}
+		}
+		/*else { // If not we assume it is a URL
 			log("Adding the http:// scheme to the url for disambiguation\n")
 			new_url = fmt.Sprintf("http://%s", raw_url)
-		}
-		parsed, err = url.Parse(new_url)
-		if err != nil {
-			return nil, fmt.Errorf("Error in reparsing the url after expanding the tilde: %v\n", err)
-		}
+		}*/
 	}
 
 	return &URL{
 		raw_url: new_url,
 		URL:     parsed,
 	}, err
+}
+
+func (this *URL) String() string {
+	if this.Path != this.raw_url {
+		return this.raw_url
+	}
+	return this.URL.String()
 }

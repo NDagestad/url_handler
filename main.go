@@ -83,7 +83,7 @@ func get_mime_type(ressource *URL) (string, error) {
 		if err == nil {
 			mime = mtype.String()
 		} else {
-			log("Error getting mime type: %v\n")
+			log("Error getting mime type: %v\n", err_)
 		}
 		// FIXME Yikes, I should look into variable shadowing rules but I think err was being create
 		// as a new variable here and therefor th function did not return the error
@@ -99,7 +99,7 @@ func run_filter(filter string, url *URL, config *Config, handler Handler) (bool,
 		_, err := os.Stat(executable)
 		if err != nil {
 			if handler.Name != filter {
-				fmt.Fprintf(os.Stderr, "Could not run the filter \"%s\": %s\n", filter, err)
+				log("Could not run the filter \"%s\": %s\n", filter, err)
 			}
 			return false, ""
 		}
@@ -118,7 +118,7 @@ func run_filter(filter string, url *URL, config *Config, handler Handler) (bool,
 	env = append(env, fmt.Sprintf("section=%s", handler.Name))
 	cmd_stdin, err := cmd.StdinPipe()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not get a pipe to the filters stdin: %v\n", err)
+		log("Could not get a pipe to the filters stdin: %v\n", err)
 	}
 	pwd, available := url.User.Password()
 	if available && err == nil {
@@ -127,7 +127,7 @@ func run_filter(filter string, url *URL, config *Config, handler Handler) (bool,
 	cmd_stdin.Close()
 	cmd_stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not get a pipe to the filters stdout: %v\n", err)
+		log("Could not get a pipe to the filters stdout: %v\n", err)
 	}
 	cmd.Env = env
 	log("Running %#v\n", cmdline)
@@ -149,17 +149,26 @@ func run_filter(filter string, url *URL, config *Config, handler Handler) (bool,
 
 func handle_uri(raw_url string, config *Config) {
 
+	var (
+		extension string
+		mime_type string
+	)
 	url, err := Parse(raw_url)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error in parsing the url %v\n", err)
-		return
-	}
-
-	parts := strings.Split(url.Path, ".")
-	extension := parts[len(parts)-1]
-	mime_type, err := get_mime_type(url)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not get mime type for %s: %v\n", url.String(), err)
+		log("Error in parsing the url %v\n", err)
+		url = &URL{
+			raw_url: raw_url,
+		}
+		extension = ""
+		mime_type = ""
+	} else {
+		parts := strings.Split(url.Path, ".")
+		extension = parts[len(parts)-1]
+		var err error //TODO Still havent looked into shadowing rules
+		mime_type, err = get_mime_type(url)
+		if err != nil {
+			log("Could not get mime type for %s: %v\n", url.String(), err)
+		}
 	}
 
 	runner := config.Browser
@@ -183,7 +192,7 @@ func handle_uri(raw_url string, config *Config) {
 		for _, mime := range handler.MimeTypes {
 			matched, err := regexp.MatchString(mime, mime_type)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "[mime]: %s is not a valide regex, ignored...\n", mime)
+				log("[mime]: %s is not a valide regex, ignored...\n", mime)
 				continue
 			}
 			if matched {
@@ -201,7 +210,7 @@ func handle_uri(raw_url string, config *Config) {
 		for _, reg := range handler.UrlRegexs {
 			matched, err := regexp.MatchString(reg, raw_url)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "[url_regex]: %s is not a valide regex, ignored...\n", reg)
+				log("[url_regex]: %s is not a valide regex, ignored...\n", reg)
 				continue
 			} else if matched {
 				log("Matched with a regex for %#v\n", reg)
@@ -209,7 +218,6 @@ func handle_uri(raw_url string, config *Config) {
 			}
 		}
 
-		// TODO Handle the filter returning a new url
 		filter_handler := func(filter string) {
 			//TODO: support arguments for filters?
 			match, new_url := run_filter(filter, url, config, handler)
@@ -261,7 +269,7 @@ func handle_uri(raw_url string, config *Config) {
 		err = cmd.Run()
 	}
 	if err != nil {
-		fmt.Printf("Error running the command: %v\n", err)
+		log("Error running the command: %v\n", err)
 		return
 	}
 }
