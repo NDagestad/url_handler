@@ -11,22 +11,18 @@ Goals for v1 release
 	
 	* Add multiple loglevels
 
-	* Make MatchExpression a shadowable parameter?
 
 Goals for later:
 	* Make it possible to handle non URIs - this is almost possible already, I just can't use http
 	  as a protocol when it is missing without checking if there already is a handler for the string
 		* Get closer to plan 9's plumber by handling arbitrary strings
-			e.g. 
-				- CVE-... opens the corresponding CVE in the browser
-				- something(X) opens a man page X for something
-				- RFC XXXX opens the rfc in the browser
+			- CVE-... opens the corresponding CVE in the browser
+				This needs the ability to modify the URI before continuing the handling
 	* Open a file to the right line when it has the format PATH:lineno
+	* Make MatchExpression a shadowable parameter?
+	* Let filters modify the URI on match
 
 BUG:
 	* Segfault when handling the output of `ls -ld --hyperlink=always .`
 		* There is no way for the program to handle it correctly, but it should fail gracefully
-	* segfault for this example: `url_handler "CVE 2018-16422"`
-		* might be the same bug as above but there is no reason for it this time
-		-> cause is in url parsing in url.go:39
 		

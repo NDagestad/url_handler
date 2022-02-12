@@ -14,8 +14,12 @@ _command_ | *url_handler* [-debug] (read URIs from stdin)
 
 # DESCRIPTION
 
-url_handler is a utility that takes one or more URI and open the coresponding resource
+*url_handler* is a utility that takes one or more URI and open the coresponding resource
 with the program you have configured it to use.
+Taking some inspiration from plan 9's plumber, the data given to the
+*url_handler* does not strictly have to a URI, with the right regex it should be
+possible to use strings like *page(X)* to opoen the man page of page in section
+X or more or less whatever you can imagine.
 
 # FILES
 
