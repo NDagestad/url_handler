@@ -44,6 +44,6 @@ files should be in *$XDG_CONFIG_HOME*, see *url_handler*(5) for more on that.
 # AUTHORS
 
 Maintained and developped by Nicolai Dagestad <nicolai@dagestad.fr>. The
-upstream sources are at https://git.dagestad.fr/~nicolai/url_handler. Bug reports
-and patches are welcome and should be sent directly to the author while there is
-no mailling list (There should be one at some point)
+upstream sources are at https://sr.ht/~nicolai/url_handler. Bug reports
+and patches are welcome and should be sent to the mailing list at 
+~nicolai_dagestad/url_handler@lists.sr.ht

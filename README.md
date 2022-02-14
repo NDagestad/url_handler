@@ -11,17 +11,19 @@ A 200 line bash script isn't that bad, but it is really not the ideal medium to 
 complexe as URI handling. I say URI, because this has evolved into a sort of replacement of
 xdg-open, by being also able to open paths to local resources, but different 🙃
 
-Upstream is [my sourcehut instance](https://git.dagestad.fr/~nicolai/url_handler) in case this is
-uploaded somwhere else
+Upstream is [https://sr.ht/~nicolai_dagestad/url_handler/](https://sr.ht/~nicolai_dagestad/url_handler/) 
+in case this is uploaded somwhere else.
 
 # Building
 
-Its go, so `go build`, and maybe some `go get`s ¯\\\_(ツ)\_/¯
+`make`
+
+That should be all you need.
 
 The man pages are compiled with [scdoc](https://git.sr.ht/~sircmpwn/scdoc). It might even be in your
 repos ¯\\\_(ツ)\_/¯.
-Compiling them is as easy as `scdoc < file.scd > file`, but if you just want to read them, the scdoc
-format is more or less markdown so it's quit easy to read 👍.
+With scodcs installed a simpel `make doc` will get you groff man pages, but if you just want to 
+read them, the scdoc format is more or less markdown so it's quit easy to read 👍.
 
 # Installing
 
@@ -31,10 +33,10 @@ this interesting enough to package it for you.
 If there is no installation mehtod for you just put the executable in your path and add a config
 file in `$XDG_CONFIG_HOME/url_handler` on your machine. (`XDG_CONFIG_HOME` will most likely be `~/.config`
 if you haven't done anything funny to you system, but if you had, you would probably know about the
-xdg base directory spec)
+xdg base directory spec :p)
 
 # Hacking
 
-Patches are welcome, for now you can send them to [misc-git@nicolai.dagestad.fr](mailto:misc-git@nicolai.dagestad.fr) 
-directly until I set up mailling lists on my sourcehut instance.
+Patches are welcome, the mailing list is at [~nicolai_dagestad/url_handler@lists.sr.ht](mailto:~nicolai_dagestad/url_handler@lists.sr.ht).
+The project page is [https://sr.ht/~nicolai_dagestad/url_handler/](https://sr.ht/~nicolai_dagestad/url_handler/)
 

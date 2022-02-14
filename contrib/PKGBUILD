@@ -1,6 +1,6 @@
 # Maintainer: Nicolai Dagestad <aur@nicolai.dagestad.fr>
 pkgname='url_handler-git'
-pkgver=r58.f252002
+pkgver=1.0.0.r0.3dab9e9
 pkgrel=1
 arch=('x86_64' 'aarch64')
 licence=('GPL3')
@@ -9,15 +9,12 @@ makedepends=('go' 'git' 'scdoc')
 provides=("${pkgname%-git}")
 conflicts=("${pkgname%-git}")
 backup=('etc/xdg/url_handler/config.ini')
-source=('git+https://git.dagestad.fr/~nicolai/url_handler')
+source=('git+https://git.sr.ht/~nicolai_dagestad/url_handler')
 md5sums=('SKIP')
 
 pkgver() {
 	cd "${pkgname%-git}"
-	# Git tag:
-	#printf "%s" "$(git describe --long | sed 's/\([^-]*-\)g/r\1/;s/-/./g')"
-	# No Git tag:
-	printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+	printf "%s" "$(git describe --long --tags | sed 's/\([^-]*-\)g/r\1/;s/-/./g')"
 }
 
 build() {
