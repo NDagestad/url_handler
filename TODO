@@ -1,28 +1,27 @@
-Goals for v1 release
+Goals for next release
 	* Add exclusion conditions
-	* Make it configurable what conditions make a URI match
+	* Make it configurable what conditions make a URI match                       PARTIALY DONE
 		* Make !name match the exclusion condition for that name ?
-		* Reduce the logical clause to it's simplest form ? Might be hard
+		* Reduce the logical clause to it's simplest form ?                       Might be hard
 		* Notify the user if they defined a condition but it has no effet in the
 			clause (will need the previous point to be doable)
 	
-	* Make exec parametrized e.g.: %u for the URI to handle, and maybe more %s
-		for the section, %p for the scheme (protocol), %e extension etc
 	
-	* Add multiple loglevels
-
 
 Goals for later:
-	* Make it possible to handle non URIs - this is almost possible already, I just can't use http
-	  as a protocol when it is missing without checking if there already is a handler for the string
-		* Get closer to plan 9's plumber by handling arbitrary strings
-			- CVE-... opens the corresponding CVE in the browser
-				This needs the ability to modify the URI before continuing the handling
-	* Open a file to the right line when it has the format PATH:lineno
-	* Make MatchExpression a shadowable parameter?
+	* Make exec parametrized e.g.: %u for the URI to handle, and maybe more %s
+		for the section, %p for the scheme (protocol), %e extension etc
+		- Is there even a use for this?
 	* Let filters modify the URI on match
+	* Handle CVE-... opening the corresponding CVE in the browser 
+		- This needs the previours point to work with my qutebrowser setup
+	* Open a file to the right line when it has the format PATH:lineno
+		- This also needs the aility for a filter to modify the URI
+	* Make MatchExpression a shadowable parameter?
 
 BUG:
 	* Segfault when handling the output of `ls -ld --hyperlink=always .`
 		* There is no way for the program to handle it correctly, but it should fail gracefully
+		* Investigate to really understand why this kind of input crashes the hanlder
+			* Somehow I must detect if the data is something I can hanlde or not probably
 		
