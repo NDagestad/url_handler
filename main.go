@@ -39,14 +39,22 @@ type Handler struct {
 	MatchExpression string
 }
 
+const (
+	LOG_NONE int = iota
+	LOG_ERROR
+	LOG_WARNING
+	LOG_DEBUG
+)
+
 var (
 	AppName       string
 	debug         *bool
 	VersionNumber string
+	loglevel      int
 )
 
-func log(format string, args ...interface{}) {
-	if *debug {
+func log(level int, format string, args ...interface{}) {
+	if level <= loglevel {
 		fmt.Printf(format, args...)
 	}
 }
@@ -83,7 +91,7 @@ func get_mime_type(ressource *URL) (string, error) {
 		if err == nil {
 			mime = mtype.String()
 		} else {
-			log("Error getting mime type: %v\n", err_)
+			log(LOG_ERROR, "Error getting mime type: %v\n", err_)
 		}
 		// FIXME Yikes, I should look into variable shadowing rules but I think err was being create
 		// as a new variable here and therefor th function did not return the error
@@ -99,7 +107,7 @@ func run_filter(filter string, url *URL, config *Config, handler Handler) (bool,
 		_, err := os.Stat(executable)
 		if err != nil {
 			if handler.Name != filter {
-				log("Could not run the filter \"%s\": %s\n", filter, err)
+				log(LOG_WARNING, "Could not run the filter \"%s\": %s\n", filter, err)
 			}
 			return false, ""
 		}
@@ -118,7 +126,7 @@ func run_filter(filter string, url *URL, config *Config, handler Handler) (bool,
 	env = append(env, fmt.Sprintf("section=%s", handler.Name))
 	cmd_stdin, err := cmd.StdinPipe()
 	if err != nil {
-		log("Could not get a pipe to the filters stdin: %v\n", err)
+		log(LOG_ERROR, "Could not get a pipe to the filters stdin: %v\n", err)
 	}
 	pwd, available := url.User.Password()
 	if available && err == nil {
@@ -127,21 +135,21 @@ func run_filter(filter string, url *URL, config *Config, handler Handler) (bool,
 	cmd_stdin.Close()
 	cmd_stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		log("Could not get a pipe to the filters stdout: %v\n", err)
+		log(LOG_ERROR, "Could not get a pipe to the filters stdout: %v\n", err)
 	}
 	cmd.Env = env
-	log("Running %#v\n", cmdline)
+	log(LOG_DEBUG, "Running %#v\n", cmdline)
 	err = cmd.Run()
 	if err != nil && cmd.ProcessState.ExitCode() != 1 {
 		fmt.Fprintf(os.Stderr, "Error running the filter \"%s\": %s\n", filter, err)
 	} else if cmd.ProcessState.ExitCode() == 0 {
 		new_url, err := io.ReadAll(cmd_stdout)
 		if err != nil {
-			log("Error reading stdout from the filter (%s) output: %v\n", filter, err)
+			log(LOG_ERROR, "Error reading stdout from the filter (%s) output: %v\n", filter, err)
 		}
 		return true, string(new_url)
 	} else if cmd.ProcessState.ExitCode() == 1 {
-		log("Filter (%s) returned 1\n", filter)
+		log(LOG_WARNING, "Filter (%s) returned 1\n", filter)
 		return false, ""
 	}
 	return false, ""
@@ -155,7 +163,7 @@ func handle_uri(raw_url string, config *Config) {
 	)
 	url, err := Parse(raw_url)
 	if err != nil {
-		log("Error in parsing the url %v\n", err)
+		log(LOG_ERROR, "Error in parsing the url %v\n", err)
 		url = &URL{
 			raw_url: raw_url,
 		}
@@ -167,7 +175,7 @@ func handle_uri(raw_url string, config *Config) {
 		var err error //TODO Still havent looked into shadowing rules
 		mime_type, err = get_mime_type(url)
 		if err != nil {
-			log("Could not get mime type for %s: %v\n", url.String(), err)
+			log(LOG_WARNING, "Could not get mime type for %s: %v\n", url.String(), err)
 		}
 	}
 
@@ -182,38 +190,38 @@ func handle_uri(raw_url string, config *Config) {
 			"filter":    false,
 		}
 		name := handler.Name
-		log("Checking matchs for %s\n", name)
+		log(LOG_DEBUG, "Checking matchs for %s\n", name)
 		for _, p := range handler.Protocols {
 			if p == url.Scheme {
-				log("Matched with the protocol for %#v\n", p)
+				log(LOG_DEBUG, "Matched with the protocol for %#v\n", p)
 				params["protocol"] = true
 			}
 		}
 		for _, mime := range handler.MimeTypes {
 			matched, err := regexp.MatchString(mime, mime_type)
 			if err != nil {
-				log("[mime]: %s is not a valide regex, ignored...\n", mime)
+				log(LOG_ERROR, "[mime]: %s is not a valide regex, ignored...\n", mime)
 				continue
 			}
 			if matched {
-				log("Matched with the mime-type for %#v\n", mime)
+				log(LOG_DEBUG, "Matched with the mime-type for %#v\n", mime)
 				params["mime_type"] = true
 			}
 		}
 
 		for _, ext := range handler.Extensions {
 			if ext == extension {
-				log("Matched with the extension for %#v\n", ext)
+				log(LOG_DEBUG, "Matched with the extension for %#v\n", ext)
 				params["extension"] = true
 			}
 		}
 		for _, reg := range handler.UrlRegexs {
 			matched, err := regexp.MatchString(reg, raw_url)
 			if err != nil {
-				log("[url_regex]: %s is not a valide regex, ignored...\n", reg)
+				log(LOG_ERROR, "[url_regex]: %s is not a valide regex, ignored...\n", reg)
 				continue
 			} else if matched {
-				log("Matched with a regex for %#v\n", reg)
+				log(LOG_DEBUG, "Matched with a regex for %#v\n", reg)
 				params["url_regex"] = true
 			}
 		}
@@ -223,10 +231,10 @@ func handle_uri(raw_url string, config *Config) {
 			match, new_url := run_filter(filter, url, config, handler)
 			if new_url != "" {
 				//TODO: do something to replace the current url
-				log("(%s):A filter gave us a new url: %s\n", filter, new_url)
+				log(LOG_DEBUG, "(%s):A filter gave us a new url: %s\n", filter, new_url)
 			}
 			if match {
-				log("Matched because of a filter: %s\n", filter)
+				log(LOG_DEBUG, "Matched because of a filter: %s\n", filter)
 				params["filter"] = true
 			}
 		}
@@ -238,9 +246,9 @@ func handle_uri(raw_url string, config *Config) {
 		}
 		matched, err := gval.Evaluate(handler.MatchExpression, params)
 		if err != nil {
-			log("Error in evaluating the MatchExpression: %v\n", err)
+			log(LOG_ERROR, "Error in evaluating the MatchExpression: %v\n", err)
 		} else if matched == true {
-			log("Matched the url for section %s\n", name)
+			log(LOG_DEBUG, "Matched the url for section %s\n", name)
 			// matched is an interface so I cannot just evaluate it in the condition
 			runner = handler.Program
 			break
@@ -261,7 +269,7 @@ func handle_uri(raw_url string, config *Config) {
 	}
 	cmd := exec.Command(cmdline[0], cmdline[1:]...)
 
-	log("Handling the url with: %#v\n", cmdline)
+	log(LOG_DEBUG, "Handling the url with: %#v\n", cmdline)
 
 	if config.Detach {
 		err = cmd.Start()
@@ -269,7 +277,7 @@ func handle_uri(raw_url string, config *Config) {
 		err = cmd.Run()
 	}
 	if err != nil {
-		log("Error running the command: %v\n", err)
+		log(LOG_ERROR, "Error running the command: %v\n", err)
 		return
 	}
 }
@@ -290,9 +298,9 @@ func main() {
 		fmt.Fprintf(os.Stderr, "  some_command | %s [OPTIONS]\n", exec_name)
 		fmt.Fprintf(os.Stderr, "  %s [OPTIONS] (will read from the clipboard)\n", exec_name)
 		fmt.Fprintf(os.Stderr, "\nOPTIONS\n")
-		fmt.Fprintf(os.Stderr, "    -debug    Enable verbose output for debuging\n")
-		fmt.Fprintf(os.Stderr, "    -help     Print the usage and exist\n")
-		fmt.Fprintf(os.Stderr, "    -version  Print the version and exist\n")
+		fmt.Fprintf(os.Stderr, "    -loglevel {none|warning|error|debug} Log level   \n")
+		fmt.Fprintf(os.Stderr, "    -help                                Print the usage and exit\n")
+		fmt.Fprintf(os.Stderr, "    -version                             Print the version and exit\n")
 		fmt.Fprintf(os.Stderr, "\n")
 	}
 
@@ -300,7 +308,7 @@ func main() {
 		Browser: []string{"xdg-open"},
 	}
 
-	debug = flag.Bool("debug", false, "Enable debug output")
+	loglevelFlag := flag.String("loglevel", "none", "Set the loglevel")
 	version := flag.Bool("version", false, "Print the version")
 	help := flag.Bool("help", false, "Print help")
 	flag.Parse()
@@ -311,6 +319,21 @@ func main() {
 
 	if *help {
 		flag.Usage()
+		return
+	}
+
+	switch *loglevelFlag {
+	case "warning":
+		loglevel = LOG_WARNING
+	case "error":
+		loglevel = LOG_ERROR
+	case "debug":
+		loglevel = LOG_DEBUG
+	case "none":
+		loglevel = LOG_NONE
+	default:
+		flag.Usage()
+		fmt.Fprintf(os.Stderr, "%s is not a valid loglevel\n", *loglevelFlag)
 		return
 	}
 
@@ -421,13 +444,13 @@ func main() {
 				return
 			}
 			raw_urls = strings.Split(string(data), "\n")
-			log("Data read from stdin: %v\n", raw_urls)
+			log(LOG_DEBUG, "Data read from stdin: %v\n", raw_urls)
 		} else {
-			log("reading from the clipboard\n")
 			if len(config.ClipboardCmd) == 0 {
 				fmt.Fprintf(os.Stderr, "No clipboard command\n")
 				return
 			}
+			log(LOG_DEBUG, "reading from the clipboard\n")
 			clipboard := exec.Command(config.ClipboardCmd[0], config.ClipboardCmd[1:]...)
 			clipboard.Stdin = nil
 			clipboard_output, err := clipboard.StdoutPipe()
@@ -446,7 +469,7 @@ func main() {
 				return
 			}
 			raw_urls = strings.Split(string(data), "\n")
-			log("Extracted clipboard content: %#v\n", raw_urls)
+			log(LOG_DEBUG, "Extracted clipboard content: %#v\n", raw_urls)
 			clipboard.Wait()
 		}
 	}
@@ -456,7 +479,7 @@ func main() {
 			// Sometimes, we get an empty url after splitting stdin or the clipboard content
 			continue
 		}
-		log("Starting handling of %s\n", url)
+		log(LOG_DEBUG, "Starting handling of %s\n", url)
 		handle_uri(url, config)
 	}
 }

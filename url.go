@@ -23,10 +23,10 @@ func Parse(raw_url string) (*URL, error) {
 	if parsed.Scheme == "" {
 		_, err := os.Open(raw_url)
 		if !errors.Is(err, os.ErrNotExist) { // If it exists, it is a file
-			log("Expanding potential tildes in the path\n")
+			log(LOG_DEBUG, "Expanding potential tildes in the path\n")
 			raw_url = expandTilde(raw_url)
 			raw_url, err = filepath.Abs(raw_url)
-			log("Adding the file:// scheme to the url for disambiguation\n")
+			log(LOG_DEBUG, "Adding the file:// scheme to the url for disambiguation\n")
 			new_url = fmt.Sprintf("file://%s", raw_url)
 			parsed, err = url.Parse(new_url)
 			if err != nil {
@@ -34,7 +34,7 @@ func Parse(raw_url string) (*URL, error) {
 			}
 		}
 		/*else { // If not we assume it is a URL
-			log("Adding the http:// scheme to the url for disambiguation\n")
+			log(LOG_DEBUG, "Adding the http:// scheme to the url for disambiguation\n")
 			new_url = fmt.Sprintf("http://%s", raw_url)
 		}*/
 	}
