@@ -1,11 +1,14 @@
 # Maintainer: Nicolai Dagestad <aur@nicolai.dagestad.fr>
 pkgname='url_handler-git'
-pkgver=1.0.0.r0.3dab9e9
+pkgver=1.0.0.r0.2d0ffb9
 pkgrel=1
 arch=('x86_64' 'aarch64')
 licence=('GPL3')
 pkgdesc="A little go program to handle opening URI/URLs for you"
+depends=('glibc')
 makedepends=('go' 'git' 'scdoc')
+optdepends=('wl-clipboard: wayland clipboard support'
+            'xclip: Xorg clipboard support')
 provides=("${pkgname%-git}")
 conflicts=("${pkgname%-git}")
 backup=('etc/xdg/url_handler/config.ini')
@@ -34,6 +37,5 @@ package() {
 	install -Dm 755 config.example.ini "$pkgdir/etc/xdg/url_handler/config.ini"
 	install -Dm 755 url_handler.1.gz -t "$pkgdir/usr/share/man/man1"
 	install -Dm 755 url_handler.5.gz -t "$pkgdir/usr/share/man/man5"
-	# For when I add some default filters
-	mkdir -p "$pkgdir/usr/share/url_handler"
+	mkdir -p "$pkgdir/usr/share/url_handler/"
 }
