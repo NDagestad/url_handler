@@ -1,4 +1,4 @@
-module git.dagestad.fr/~nicolai/url_handler
+module git.sr.ht/~nicolai_dagestad/url_handler
 
 go 1.17
 
