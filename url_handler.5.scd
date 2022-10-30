@@ -156,7 +156,7 @@ mime_type=file/whatever
 
 # FILES
 
-*url_handler* (tries to) follow the XDG_BASE_DIRECTORY specification. THe
+*url_handler* (tries to) follow the XDG_BASE_DIRECTORY specification. The
 configuration file should therefor be in *$XDG_CONFIG_HOME*. 
 When looking for it's config file url_handler will look for these files in
 this order:
