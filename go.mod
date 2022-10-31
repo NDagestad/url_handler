@@ -7,6 +7,7 @@ require (
 	github.com/adrg/xdg v0.4.0
 	github.com/gabriel-vasile/mimetype v1.4.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
+	github.com/shopspring/decimal v1.3.1
 	gopkg.in/ini.v1 v1.66.3
 )
 
