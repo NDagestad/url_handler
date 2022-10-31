@@ -1,6 +1,6 @@
 # Maintainer: Nicolai Dagestad <aur@nicolai.dagestad.fr>
 pkgname='url_handler-git'
-pkgver=1.0.0.r0.2d0ffb9
+pkgver=1.0.0.r7.7675418
 pkgrel=1
 arch=('x86_64' 'aarch64')
 licence=('GPL3')
@@ -13,7 +13,7 @@ provides=("${pkgname%-git}")
 conflicts=("${pkgname%-git}")
 backup=('etc/xdg/url_handler/config.ini')
 source=('git+https://git.sr.ht/~nicolai_dagestad/url_handler')
-md5sums=('SKIP')
+sha256sums=('SKIP')
 
 pkgver() {
 	cd "${pkgname%-git}"
@@ -21,11 +21,17 @@ pkgver() {
 }
 
 build() {
-	export GOPATH="$srcdir"
 	cd "$srcdir/${pkgname%-git}"
-	go build -ldflags \
-		"-X main.AppName=url_handler \
-		 -X main.VersionNumber=$pkgver"
+	export GOPATH="$srcdir"
+	export CGO_CPPFLAGS="${CPPFLAGS}"
+	export CGO_CFLAGS="${CFLAGS}"
+	export CGO_CXXFLAGS="${CXXFLAGS}"
+	export CGO_LDFLAGS="${LDFLAGS}"
+	export GOFLAGS="-buildmode=pie -trimpath -mod=readonly -modcacherw "
+
+	go build -ldflags "-X main.AppName=url_handler \
+		-X main.VersionNumber=$pkgver"
+
 	scdoc < url_handler.1.scd | gzip > url_handler.1.gz
 	scdoc < url_handler.5.scd | gzip > url_handler.5.gz
 }

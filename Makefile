@@ -1,6 +1,9 @@
-# For when I add tags
-#VERSION="$(shell git describe --long | sed 's/\([^-]*-\)g/r\1/;s/-/./g')"
-VERSION="r$(shell git rev-list --count HEAD).$(shell git rev-parse --short HEAD)"
+VERSION ?= "$(shell git describe --tags --long | sed 's/\([^-]*-\)g/r\1/;s/-/./g')"
+CGO_CPPFLAGS ?= "$(CPPFLAGS)"
+CGO_CFLAGS ?= "$(CFLAGS)"
+CGO_CXXFLAGS ?= "$(CXXFLAGS)"
+CGO_LDFLAGS ?= "$(LDFLAGS)"
+GOFLAGS ?= " -trimpath"
 
 all:
 	go build -ldflags \
