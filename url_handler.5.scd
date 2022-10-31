@@ -107,6 +107,10 @@ The context is passed to the filter in the following environment variables:
 And lastly, if there is a password in the URI, it is sent to the filter over
 it's stdin.
 
+A filter can muttate the URI currently beeing processed by outputing a new URI
+to it's stdout. This new URI will not be tried against any of the previous
+tests.
+
 # MATCHING
 
 By default, a URI is tried matching with the following logic:

@@ -100,7 +100,7 @@ func get_mime_type(ressource *URL) (string, error) {
 	return mime, err
 }
 
-func run_filter(filter string, url *URL, config *Config, handler Handler) (bool, string) {
+func run_filter(filter string, url *URL, config *Config, handler Handler) (bool, []string) {
 	var executable string
 	if config.FilterPath != "" {
 		executable = filepath.Join(config.FilterPath, filter)
@@ -109,7 +109,7 @@ func run_filter(filter string, url *URL, config *Config, handler Handler) (bool,
 			if handler.Name != filter {
 				log(LOG_WARNING, "Could not run the filter \"%s\": %s\n", filter, err)
 			}
-			return false, ""
+			return false, nil
 		}
 	} else {
 		executable = filter
@@ -139,20 +139,21 @@ func run_filter(filter string, url *URL, config *Config, handler Handler) (bool,
 	}
 	cmd.Env = env
 	log(LOG_DEBUG, "Running %#v\n", cmdline)
-	err = cmd.Run()
+	err = cmd.Start()
+	new_url, err := io.ReadAll(cmd_stdout)
+	err = cmd.Wait()
 	if err != nil && cmd.ProcessState.ExitCode() != 1 {
 		fmt.Fprintf(os.Stderr, "Error running the filter \"%s\": %s\n", filter, err)
 	} else if cmd.ProcessState.ExitCode() == 0 {
-		new_url, err := io.ReadAll(cmd_stdout)
 		if err != nil {
 			log(LOG_ERROR, "Error reading stdout from the filter (%s) output: %v\n", filter, err)
 		}
-		return true, string(new_url)
+		return true, strings.Split(string(new_url), "\n")
 	} else if cmd.ProcessState.ExitCode() == 1 {
 		log(LOG_WARNING, "Filter (%s) returned 1\n", filter)
-		return false, ""
+		return false, nil
 	}
-	return false, ""
+	return false, nil
 }
 
 func handle_uri(raw_url string, config *Config) {
@@ -182,6 +183,8 @@ func handle_uri(raw_url string, config *Config) {
 	runner := config.Browser
 
 	for _, handler := range config.TypeHandlers {
+		//TODO: Find a way to layzyly set the values of params instead of alway doing all the checks
+		// Might need some big changes in gval
 		params := map[string]bool{
 			"protocol":  false,
 			"mime_type": false,
@@ -229,11 +232,22 @@ func handle_uri(raw_url string, config *Config) {
 		filter_handler := func(filter string) {
 			//TODO: support arguments for filters?
 			match, new_url := run_filter(filter, url, config, handler)
-			if new_url != "" {
-				//TODO: do something to replace the current url
-				log(LOG_DEBUG, "(%s):A filter gave us a new url: %s\n", filter, new_url)
-			}
 			if match {
+				// Do we want filters to be able to mutate the url without matching ?
+				if new_url != nil {
+					log(LOG_DEBUG, "(%s):A filter gave us new urls: %v\n", filter, new_url)
+					// TODO: handle multiple url sent back by the filter
+					url_, err := Parse(new_url[0])
+					if err == nil {
+						//FIXME Really ugly, can this be done better?
+						log(LOG_DEBUG, "Creating the new url_value")
+						url = url_
+					} else {
+						log(LOG_ERROR,
+							"Received new urls from the filter but they could not be correclty parsed: %v\n",
+							err)
+					}
+				}
 				log(LOG_DEBUG, "Matched because of a filter: %s\n", filter)
 				params["filter"] = true
 			}
@@ -248,8 +262,9 @@ func handle_uri(raw_url string, config *Config) {
 		if err != nil {
 			log(LOG_ERROR, "Error in evaluating the MatchExpression: %v\n", err)
 		} else if matched == true {
+			// matched is an interface so I cannot just evaluate it in the condition, therefore:
+			// var == true
 			log(LOG_DEBUG, "Matched the url for section %s\n", name)
-			// matched is an interface so I cannot just evaluate it in the condition
 			runner = handler.Program
 			break
 		}

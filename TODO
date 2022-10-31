@@ -11,17 +11,16 @@ Goals for next release
 Goals for later:
 	* Make exec parametrized e.g.: %u for the URI to handle, and maybe more %s
 		for the section, %p for the scheme (protocol), %e extension etc
-		- Is there even a use for this?
-	* Let filters modify the URI on match
+		- Is there even a use for this? 
+			+ Yes if the command needs the url at a specific position
 	* Handle CVE-... opening the corresponding CVE in the browser 
-		- This needs the previours point to work with my qutebrowser setup
 	* Open a file to the right line when it has the format PATH:lineno
-		- This also needs the aility for a filter to modify the URI
 	* Make MatchExpression a shadowable parameter?
 
 BUG:
 	* Segfault when handling the output of `ls -ld --hyperlink=always .`
 		* There is no way for the program to handle it correctly, but it should fail gracefully
+		* Also happens when there are tabs in the data ?
 		* Investigate to really understand why this kind of input crashes the hanlder
 			* Somehow I must detect if the data is something I can hanlde or not probably
 		
