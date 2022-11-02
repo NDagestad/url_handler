@@ -40,6 +40,11 @@ This section does not need to be named, in it you will find these options:
 	Makes *url_handler* not wait for the end of whatever process it launches.
 	Defaults to false.
 
+*notify_cmd*
+	The shell command used to show notifications. It should accept at least two
+	string parameters, a title and a body for the notification. The same way
+	*notify-send* does. Defaults to unset.
+
 
 All the options specifying an executable can handle arguments. 
 

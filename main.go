@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -24,6 +25,7 @@ type Config struct {
 	FilterPath      string
 	FilterShell     []string
 	ClipboardCmd    []string
+	NotifyCmd       []string
 	Detach          bool
 	TypeHandlers    []Handler
 }
@@ -240,7 +242,7 @@ func handle_uri(raw_url string, config *Config) {
 					url_, err := Parse(new_url[0])
 					if err == nil {
 						//FIXME Really ugly, can this be done better?
-						log(LOG_DEBUG, "Creating the new url_value")
+						log(LOG_DEBUG, "Creating the new url_value\n")
 						url = url_
 					} else {
 						log(LOG_ERROR,
@@ -283,6 +285,24 @@ func handle_uri(raw_url string, config *Config) {
 		cmdline = append(cmdline, url.String())
 	}
 	cmd := exec.Command(cmdline[0], cmdline[1:]...)
+	if errors.Is(cmd.Err, exec.ErrNotFound) {
+		if len(config.NotifyCmd) > 0 {
+			exec_name := filepath.Base(os.Args[0])
+			summary := fmt.Sprintf("Handler \"%s\" not found", cmdline[0])
+			config.NotifyCmd = append(config.NotifyCmd, exec_name)
+			config.NotifyCmd = append(config.NotifyCmd, summary)
+			notify := exec.Command(config.NotifyCmd[0], config.NotifyCmd[1:]...)
+			// FIXME Unlgy, find a better way to handle it so I don't repeat the log command
+			if errors.Is(notify.Err, exec.ErrNotFound) {
+				log(LOG_ERROR, "Notification %s command not found\n", config.NotifyCmd)
+				log(LOG_ERROR, "Handler %s not found\n", cmdline[0])
+			} else if notify.Err == nil {
+				notify.Run()
+			}
+		} else {
+			log(LOG_ERROR, "Handler %s not found\n", cmdline[0])
+		}
+	}
 
 	log(LOG_DEBUG, "Handling the url with: %#v\n", cmdline)
 
@@ -417,6 +437,12 @@ func main() {
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "\"%s\" is not a valid boolean value\n", section.Key("detach_on_exec").String())
 				fmt.Fprintf(os.Stderr, "The option is ignored and the default value (false) will be used instead\n")
+			}
+			notify_cmd := section.Key("notify_cmd").String()
+			config.NotifyCmd, err = shlex.Split(notify_cmd)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Cannot understand %s as a shell command (from the %s section)\n",
+					notify_cmd, section.Name())
 			}
 			continue
 		}
