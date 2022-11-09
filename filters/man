@@ -1,0 +1,13 @@
+#!/bin/bash
+#
+# Input: A string like namual_name(section) 
+#
+# Output: section namual_name
+
+
+url=$(echo $url | urlencode -d | sed -n 's/\([a-zA-Z_\-]\+\)(\([1-9]\))/\2 \1/p')
+if [ -n "$url" ];then
+	echo $url
+	exit 0
+fi
+exit 1

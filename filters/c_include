@@ -1,0 +1,49 @@
+#!/bin/bash
+#
+# Input: A string used for an include statement in C/C++ ("file.h", <some/file.h> or <cpp_header>)
+# 
+# Output: the absolute path to the header file
+#
+# Note: this filter uses dmenu to ask the user to select the right path when there are more than one
+# possibility
+
+paths="/usr/local/include /usr/include"
+file=""
+url=$(echo $url | urlencode -d)
+
+case "$url" in
+	\"*.h\")
+		file=$(echo "$url" | sed 's/"\(.*\.h\)"/\1/')
+	;;
+	\<*.h\>)
+		file=$(echo "$url" | sed 's/<\(.*\h\)>/\1/')
+	;;
+	\<*\>)
+		file=$(echo "$url" | sed 's/<\(.*\)>/\1.h/')
+	;;
+	*)
+		exit 1
+	;;
+esac
+
+for p in $paths;do
+	if [ -f $p/$file ];then
+		props="$props$p/$file\n"
+	fi
+done
+nb_files=$(echo -en "$props" | wc -l)
+if [ $nb_files -eq 0 ];then
+	props=$(echo -en "$props$(find /usr/include -iname $file -print)" | sort -u)
+fi
+nb_files=$(echo -en "$props" | wc -l)
+if [ $nb_files -gt 1 ];then
+	props=$(echo -ne "$props" | dmenu -p "Disambiguate the header ")
+	if [ $? -eq 1 ];then
+		# Communicate that the filter matched but an error occured
+		# TODO make a return of 2 abort handling in url_hander?
+		exit 2
+	fi
+elif [ $nb_files -eq 0 ];then
+	exit 1
+fi
+echo -en $props
