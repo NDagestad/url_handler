@@ -5,6 +5,8 @@ Goals for next release
 		* Reduce the logical clause to it's simplest form ?                       Might be hard
 		* Notify the user if they defined a condition but it has no effet in the
 			clause (will need the previous point to be doable)
+	* Add lazy evaluation of the match_expression clauses
+		* This will probably need a patch to gVal
 	
 	
 
@@ -13,7 +15,6 @@ Goals for later:
 		for the section, %p for the scheme (protocol), %e extension etc
 		- Is there even a use for this? 
 			+ Yes if the command needs the url at a specific position
-	* Handle CVE-... opening the corresponding CVE in the browser 
 	* Open a file to the right line when it has the format PATH:lineno
 	* Make MatchExpression a shadowable parameter?
 

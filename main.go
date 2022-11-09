@@ -137,19 +137,19 @@ func run_filter(filter string, url *URL, config *Config, handler Handler) (bool,
 	cmd_stdin.Close()
 	cmd_stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		log(LOG_ERROR, "Could not get a pipe to the filters stdout: %v\n", err)
+		log(LOG_ERROR, "Could not get a pipe to the filter's stdout: %v\n", err)
 	}
 	cmd.Env = env
 	log(LOG_DEBUG, "Running %#v\n", cmdline)
 	err = cmd.Start()
 	new_url, err := io.ReadAll(cmd_stdout)
+	if err != nil {
+		log(LOG_ERROR, "Error reading stdout from the filter (%s) output: %v\n", filter, err)
+	}
 	err = cmd.Wait()
 	if err != nil && cmd.ProcessState.ExitCode() != 1 {
-		fmt.Fprintf(os.Stderr, "Error running the filter \"%s\": %s\n", filter, err)
+		log(LOG_ERROR, "Error running the filter \"%s\": %s\n", filter, err)
 	} else if cmd.ProcessState.ExitCode() == 0 {
-		if err != nil {
-			log(LOG_ERROR, "Error reading stdout from the filter (%s) output: %v\n", filter, err)
-		}
 		return true, strings.Split(string(new_url), "\n")
 	} else if cmd.ProcessState.ExitCode() == 1 {
 		log(LOG_WARNING, "Filter (%s) returned 1\n", filter)
@@ -203,6 +203,7 @@ func handle_uri(raw_url string, config *Config) {
 			}
 		}
 		for _, mime := range handler.MimeTypes {
+			log(LOG_DEBUG, "[mime]: the mime type is %s\n", mime_type)
 			matched, err := regexp.MatchString(mime, mime_type)
 			if err != nil {
 				log(LOG_ERROR, "[mime]: %s is not a valide regex, ignored...\n", mime)
@@ -242,7 +243,7 @@ func handle_uri(raw_url string, config *Config) {
 					url_, err := Parse(new_url[0])
 					if err == nil {
 						//FIXME Really ugly, can this be done better?
-						log(LOG_DEBUG, "Creating the new url_value\n")
+						log(LOG_DEBUG, "Creating the new url value\n")
 						url = url_
 					} else {
 						log(LOG_ERROR,
@@ -379,7 +380,7 @@ func main() {
 
 	configFile, err := xdg.SearchConfigFile(filepath.Join(AppName, "config.ini"))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not load config file: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not find config file: %v\n", err)
 		return
 	}
 
