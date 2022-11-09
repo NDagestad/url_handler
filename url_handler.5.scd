@@ -25,8 +25,8 @@ This section does not need to be named, in it you will find these options:
 	be used. Defaults to unset. 
 
 *filter_path*
-	The (absolute for now) path in which filters will be loocked for. If unset,
-	the filters will be looked up in $PATH. Default to unset.
+	The path in which filters will be loocked for. If unset, the filters will be 
+	looked up in $PATH. Default to unset.
 
 *filter_shell*
 	The shell used to launch the filters. If unset, the filter will be launched as
@@ -38,6 +38,8 @@ This section does not need to be named, in it you will find these options:
 
 *detach_on_exec*
 	Makes *url_handler* not wait for the end of whatever process it launches.
+	Enabling this means that *url_handler* won't be able to detect if the
+	process returns an error.
 	Defaults to false.
 
 *notify_cmd*
