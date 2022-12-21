@@ -27,7 +27,7 @@ read them, the scdoc format is more or less markdown so it's quit easy to read ð
 
 # Installing
 
-I'll get a PKBGUILD going when it is done, for other distros you're on your own (until somebody find
+If you are using arch or an arch derivative, for other distros you're on your own (until somebody find
 this interesting enough to package it for you.
 
 If there is no installation mehtod for you just put the executable in your path and add a config

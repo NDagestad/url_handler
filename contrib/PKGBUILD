@@ -1,6 +1,6 @@
 # Maintainer: Nicolai Dagestad <aur@nicolai.dagestad.fr>
 pkgname='url_handler-git'
-pkgver=1.0.0.r7.7675418
+pkgver=1.0.0.r13.6b9a74a
 pkgrel=1
 arch=('x86_64' 'aarch64')
 licence=('GPL3')
