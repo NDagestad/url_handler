@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"syscall"
 
 	"github.com/PaesslerAG/gval"
 	"github.com/adrg/xdg"
@@ -45,6 +46,7 @@ const (
 	LOG_NONE int = iota
 	LOG_ERROR
 	LOG_WARNING
+	LOG_INFO
 	LOG_DEBUG
 )
 
@@ -144,7 +146,7 @@ func run_filter(filter string, url *URL, config *Config, handler Handler) (bool,
 	err = cmd.Start()
 	new_url, err := io.ReadAll(cmd_stdout)
 	if err != nil {
-		log(LOG_ERROR, "Error reading stdout from the filter (%s) output: %v\n", filter, err)
+		log(LOG_WARNING, "Error reading stdout from the filter (%s) output: %v\n", filter, err)
 	}
 	err = cmd.Wait()
 	if err != nil && cmd.ProcessState.ExitCode() != 1 {
@@ -308,13 +310,25 @@ func handle_uri(raw_url string, config *Config) {
 	log(LOG_DEBUG, "Handling the url with: %#v\n", cmdline)
 
 	if config.Detach {
-		err = cmd.Start()
+		bin, err := exec.LookPath(cmdline[0])
+		if err != nil {
+			log(LOG_ERROR, "Could not find %s in $PATH\n", cmdline[0])
+			return
+		}
+		pid, err := syscall.ForkExec(bin, cmdline, &syscall.ProcAttr{
+			Env:   os.Environ(),
+			Files: []uintptr{0, 1, 2}, // print message to the same pty
+		})
+		if err != nil {
+			log(LOG_ERROR, "Error fork-and-execing: %v\n", err)
+		} else {
+			log(LOG_INFO, "Forked to process: %d\n", pid)
+		}
 	} else {
 		err = cmd.Run()
-	}
-	if err != nil {
-		log(LOG_ERROR, "Error running the command: %v\n", err)
-		return
+		if err != nil {
+			log(LOG_ERROR, "Error running the command: %v\n", err)
+		}
 	}
 }
 
