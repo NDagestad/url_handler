@@ -14,18 +14,20 @@ type URL struct {
 }
 
 func Parse(raw_url string) (*URL, error) {
+	log(LOG_DEBUG, "Expanding potential tildes in the path\n")
+	raw_url = expandTilde(raw_url)
 	new_url := raw_url
 	parsed, err := url.Parse(raw_url)
 	if err != nil {
 		return nil, fmt.Errorf("Got an error while parsning: %v\n", err)
 	}
-
 	if parsed.Scheme == "" {
 		_, err := os.Open(raw_url)
 		if !errors.Is(err, os.ErrNotExist) { // If it exists, it is a file
-			log(LOG_DEBUG, "Expanding potential tildes in the path\n")
-			raw_url = expandTilde(raw_url)
 			raw_url, err = filepath.Abs(raw_url)
+			if err != nil {
+				return nil, fmt.Errorf("Error getting the absolute path: %w", err)
+			}
 			log(LOG_DEBUG, "Adding the file:// scheme to the url for disambiguation\n")
 			new_url = fmt.Sprintf("file://%s", raw_url)
 			parsed, err = url.Parse(new_url)
