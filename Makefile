@@ -11,5 +11,5 @@ all:
 		 -X main.VersionNumber=$(VERSION)"
 
 doc:
-	scdoc < url_handler.1.scd > url_handler.1
-	scdoc < url_handler.5.scd > url_handler.5
+	scdoc < url_handler.1.scd | gzip - > url_handler.1.gz
+	scdoc < url_handler.5.scd | gzip - > url_handler.5.gz
