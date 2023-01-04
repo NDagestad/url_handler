@@ -8,8 +8,10 @@ quite like how it worked, so I rewrote it, and the last version of that monstruo
 like [this](https://git.dagestad.fr/~nicolai/bin/tree/d427aea871ec91b61c73f70d24aeadfad509326a/item/url_handler)
 
 A 200 line bash script isn't that bad, but it is really not the ideal medium to handle something as
-complexe as URI handling. I say URI, because this has evolved into a sort of replacement of
-xdg-open, by being also able to open paths to local resources, but different 🙃
+complexe as URIs. I say URI, because this has evolved into a sort of replacement of
+xdg-open, by being also able to open paths to local resources but different 🙃. (A bit like
+[plumber](https://9fans.github.io/plan9port/man/man4/plumber.html), but reallynot to the same
+extent)
 
 Upstream is [https://sr.ht/~nicolai_dagestad/url_handler/](https://sr.ht/~nicolai_dagestad/url_handler/) 
 in case this is uploaded somwhere else.
@@ -22,13 +24,14 @@ That should be all you need.
 
 The man pages are compiled with [scdoc](https://git.sr.ht/~sircmpwn/scdoc). It might even be in your
 repos ¯\\\_(ツ)\_/¯.
-With scodcs installed a simpel `make doc` will get you groff man pages, but if you just want to 
+With scodcs installed a simple `make doc` will get you groff man pages, but if you just want to 
 read them, the scdoc format is more or less markdown so it's quit easy to read 👍.
 
 # Installing
 
-If you are using arch or an arch derivative, for other distros you're on your own (until somebody find
-this interesting enough to package it for you.
+If you are using arch or an arch derivative there is a PKGBUILD file in the contrib folder, at some
+point I might put it up on the aur. For other distros you're on your own. (until somebody find this
+interesting enough to package it for you)
 
 If there is no installation mehtod for you just put the executable in your path and add a config
 file in `$XDG_CONFIG_HOME/url_handler` on your machine. (`XDG_CONFIG_HOME` will most likely be `~/.config`
