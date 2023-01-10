@@ -24,4 +24,4 @@ BUG:
 		* Also happens when there are tabs in the data ?
 		* Investigate to really understand why this kind of input crashes the hanlder
 			* Somehow I must detect if the data is something I can hanlde or not probably
-		
+	* If a path contains a non-existant directory, get_mime_type will segfault		

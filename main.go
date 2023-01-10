@@ -70,6 +70,8 @@ func get_mime_type(ressource *URL) (string, error) {
 		err  error
 	)
 
+	log(LOG_DEBUG, "get_mime_type: %v\n", ressource)
+
 	switch ressource.Scheme {
 	case "http":
 		fallthrough
@@ -86,6 +88,8 @@ func get_mime_type(ressource *URL) (string, error) {
 	case "":
 		// check if path is a directory, the library does not handle them
 		// TODO Maybe I could ask if they want to support directories as well but I doubt it
+		// FIXME if the ressource is a path where in which a dir does not exist.
+		// It is not caught, but IsNotExist doas not return true in that case...
 		info, err := os.Stat(ressource.Path)
 		if !os.IsNotExist(err) && info.IsDir() {
 			return "inode/directory", nil
@@ -205,7 +209,7 @@ func handle_uri(raw_url string, config *Config) {
 			}
 		}
 		for _, mime := range handler.MimeTypes {
-			log(LOG_DEBUG, "[mime]: the mime type is %s\n", mime_type)
+			log(LOG_DEBUG, "[mime]: Comparing %s to %s\n", mime_type, mime)
 			matched, err := regexp.MatchString(mime, mime_type)
 			if err != nil {
 				log(LOG_ERROR, "[mime]: %s is not a valide regex, ignored...\n", mime)
