@@ -126,7 +126,7 @@ func run_filter(filter string, url *URL, config *Config, handler Handler) (bool,
 	cmdline = append(cmdline, executable)
 	cmd := exec.Command(cmdline[0], cmdline[1:]...)
 	env := os.Environ()
-	env = append(env, fmt.Sprintf("url=%s", url.String())) //XXX this could be slitghly different from raw_url
+	env = append(env, fmt.Sprintf("url=%s", url.String()))
 	env = append(env, fmt.Sprintf("protocol=%s", url.Scheme))
 	env = append(env, fmt.Sprintf("user=%s", url.User.Username()))
 	env = append(env, fmt.Sprintf("host=%s", url.Host))
@@ -162,6 +162,14 @@ func run_filter(filter string, url *URL, config *Config, handler Handler) (bool,
 		return false, nil
 	}
 	return false, nil
+}
+
+func interpolate(str []string, ctx map[string]string) ([]string, error) {
+	for idx, _ := range str {
+		// TODO make this for all keys and values in the map
+		str[idx] = strings.ReplaceAll(str[idx], "%u", ctx["%u"])
+	}
+	return str, nil
 }
 
 func handle_uri(raw_url string, config *Config) {
@@ -273,7 +281,7 @@ func handle_uri(raw_url string, config *Config) {
 		} else if matched == true {
 			// matched is an interface so I cannot just evaluate it in the condition, therefore:
 			// var == true
-			log(LOG_DEBUG, "Matched the url for section %s\n", name)
+			log(LOG_DEBUG, "Matched the url for section %s (expr: %s)\n", name, handler.MatchExpression)
 			runner = handler.Program
 			break
 		}
@@ -291,6 +299,12 @@ func handle_uri(raw_url string, config *Config) {
 		// TODO handle special character getting mangled in encoding/decoding
 		cmdline = append(cmdline, url.String())
 	}
+
+	// TODO  replace %u in cmdline with the url instean of appending at the end
+	cmdline, err = interpolate(cmdline, map[string]string{
+		"%u": url.Path,
+	}) 
+
 	cmd := exec.Command(cmdline[0], cmdline[1:]...)
 	if errors.Is(cmd.Err, exec.ErrNotFound) {
 		if len(config.NotifyCmd) > 0 {

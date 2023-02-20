@@ -15,6 +15,7 @@ Goals for later:
 		for the section, %p for the scheme (protocol), %e extension etc
 		- Is there even a use for this? 
 			+ Yes if the command needs the url at a specific position
+			+ To use shell pipelines as the exec
 	* Open a file to the right line when it has the format PATH:lineno
 	* Make MatchExpression a shadowable parameter?
 
