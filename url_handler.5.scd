@@ -70,6 +70,10 @@ order in which they appear in the configuration file..
 *exec*
 	The only mandatory option, and the only one that must be unique for the
 	section. it is the program used to handle the URI.
+	The command specified support a limited form of variable interpolation:
+	*%e*, *%p*, *%s*, *%u* will respectively replaced by the extension and 
+	protocol of the URI, the URI itself and the section that matched.
+	*%%* is an escaped *%* 
 
 *protocol*
 	The protocols for this ressource.

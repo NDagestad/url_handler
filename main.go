@@ -164,11 +164,45 @@ func run_filter(filter string, url *URL, config *Config, handler Handler) (bool,
 	return false, nil
 }
 
-func interpolate(str []string, ctx map[string]string) ([]string, error) {
+func interpolate(str []string, ctx map[byte]string) ([]string, error) {
+	added_url := false
 	for idx, _ := range str {
-		// TODO make this for all keys and values in the map
-		str[idx] = strings.ReplaceAll(str[idx], "%u", ctx["%u"])
+		var new_str string
+
+		// FIXME, this is some ugly parsing and stuff, but it works™
+	outer:
+		for i := 0; i < len(str[idx]); i++ {
+			c := str[idx][i]
+			if c == '%' {
+				i++
+				c = str[idx][i]
+				if c == '%' {
+					log(LOG_DEBUG, "Escaped %% sign, go to next char\n")
+					new_str += string('%')
+					continue
+				}
+				for key, value := range ctx {
+					if key == c {
+						added_url = added_url || (c == 'u')
+						new_str += value
+						log(LOG_DEBUG, "Matched a var: %c\n", c)
+						continue outer
+					}
+				}
+				new_str += string('%')
+				log(LOG_DEBUG, "No match found, appending\n")
+			}
+			new_str += string(c)
+		}
+		str[idx] = new_str
+
 	}
+
+	if !added_url {
+		str = append(str, ctx['u'])
+	}
+
+	log(LOG_DEBUG, "Post interpolation str: %v\n", str)
 	return str, nil
 }
 
@@ -177,6 +211,7 @@ func handle_uri(raw_url string, config *Config) {
 	var (
 		extension string
 		mime_type string
+		handler   Handler
 	)
 	url, err := Parse(raw_url)
 	if err != nil {
@@ -198,7 +233,7 @@ func handle_uri(raw_url string, config *Config) {
 
 	runner := config.Browser
 
-	for _, handler := range config.TypeHandlers {
+	for _, handler = range config.TypeHandlers {
 		//TODO: Find a way to layzyly set the values of params instead of alway doing all the checks
 		// Might need some big changes in gval
 		params := map[string]bool{
@@ -287,41 +322,46 @@ func handle_uri(raw_url string, config *Config) {
 		}
 	}
 
-	var cmdline []string
+	var (
+		cmdline []string
+		u       string
+	)
 	if len(config.ProgramLauncher) > 0 {
 		cmdline = append(cmdline, config.ProgramLauncher...)
 	}
-
-	cmdline = append(cmdline, runner...)
 	if url.Scheme == "file" {
-		cmdline = append(cmdline, url.Path)
+		u = url.Path
 	} else {
 		// TODO handle special character getting mangled in encoding/decoding
-		cmdline = append(cmdline, url.String())
+		// Is this fixed? - 24/02/2023
+		u = url.String()
 	}
 
-	// TODO  replace %u in cmdline with the url instean of appending at the end
-	cmdline, err = interpolate(cmdline, map[string]string{
-		"%u": url.Path,
-	}) 
+	cmdline = append(cmdline, runner...)
+	ctx := map[byte]string{
+		'e': extension,
+		'p': url.Scheme,
+		's': handler.Name,
+		'u': u,
+	}
+	cmdline, err = interpolate(cmdline, ctx)
 
 	cmd := exec.Command(cmdline[0], cmdline[1:]...)
 	if errors.Is(cmd.Err, exec.ErrNotFound) {
+		summary := fmt.Sprintf("Handler \"%s\" not found", cmdline[0])
 		if len(config.NotifyCmd) > 0 {
 			exec_name := filepath.Base(os.Args[0])
-			summary := fmt.Sprintf("Handler \"%s\" not found", cmdline[0])
 			config.NotifyCmd = append(config.NotifyCmd, exec_name)
 			config.NotifyCmd = append(config.NotifyCmd, summary)
 			notify := exec.Command(config.NotifyCmd[0], config.NotifyCmd[1:]...)
-			// FIXME Unlgy, find a better way to handle it so I don't repeat the log command
 			if errors.Is(notify.Err, exec.ErrNotFound) {
 				log(LOG_ERROR, "Notification %s command not found\n", config.NotifyCmd)
-				log(LOG_ERROR, "Handler %s not found\n", cmdline[0])
+				log(LOG_ERROR, summary)
 			} else if notify.Err == nil {
 				notify.Run()
 			}
 		} else {
-			log(LOG_ERROR, "Handler %s not found\n", cmdline[0])
+			log(LOG_ERROR, summary)
 		}
 	}
 
