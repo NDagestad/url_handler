@@ -2,22 +2,24 @@ Goals for next release
 	* Add exclusion conditions
 	* Make it configurable what conditions make a URI match                       PARTIALY DONE
 		* Make !name match the exclusion condition for that name ?
-		* Reduce the logical clause to it's simplest form ?                       Might be hard
-		* Notify the user if they defined a condition but it has no effet in the
-			clause (will need the previous point to be doable)
+	* Reduce the logical clause to it's simplest form ?                       Might be hard
+	* Notify the user if they defined a condition but it has no effet in the
+		clause (will need the previous point to be doable)
 	* Add lazy evaluation of the match_expression clauses
 		* This will probably need a patch to gVal
+		* I want to be able to have a function attached to the value of a variable,
+		  this function would have to be called when gVal uses the variable.
+			* This would be especially usefull for the mime type that can do an HTTP
+			  request to determine it
 	
 	
 
 Goals for later:
-	* Make exec parametrized e.g.: %u for the URI to handle, and maybe more %s
-		for the section, %p for the scheme (protocol), %e extension etc
-		- Is there even a use for this? 
-			+ Yes if the command needs the url at a specific position
-			+ To use shell pipelines as the exec
 	* Open a file to the right line when it has the format PATH:lineno
+		* Should be doable with a filter and mutations
 	* Make MatchExpression a shadowable parameter?
+		* Each MatchExpression would be ored together to make the final expression
+
 
 BUG:
 	* Segfault when handling the output of `ls -ld --hyperlink=always .`
@@ -26,3 +28,15 @@ BUG:
 		* Investigate to really understand why this kind of input crashes the hanlder
 			* Somehow I must detect if the data is something I can hanlde or not probably
 	* If a path contains a non-existant directory, get_mime_type will segfault		
+
+
+
+
+
+
+NOTICE:
+	* Due to golang being very dumb in many ways, I will probably rewrite the project in some other language.
+	  rust comes to mind, but maybe I'll use hare instead to see how it fares (that might be anoying for 
+	  handling the logical expressions though since the language is so young and no library for it exists 
+	  yet - probably, but I would be shocked if any did)
+
