@@ -209,6 +209,6 @@ might crash.
 # AUTHORS
 
 Maintained and developped by Nicolai Dagestad <nicolai@dagestad.fr>. The
-upstream sources are at https://sr.ht/~nicolai/url_handler. Bug reports
+upstream sources are at https://sr.ht/~nicolai_dagestad/url_handler. Bug reports
 and patches are welcome and should be sent to the mailing list at 
 ~nicolai_dagestad/url_handler@lists.sr.ht.
